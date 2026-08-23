@@ -2,7 +2,7 @@ import csv
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import insert
+from sqlalchemy import insert, text
 
 from database.connection import SessionLocal
 from database.models import StaticFare
@@ -20,9 +20,40 @@ def load_static_fares():
 
     db = SessionLocal()
 
+    # Make import idempotent by truncating static_fares first
+    try:
+        db.execute(text("TRUNCATE TABLE static_fares RESTART IDENTITY CASCADE"))
+        db.commit()
+        print("Truncated table static_fares successfully.")
+    except Exception as e:
+        print(f"Warning: could not truncate table static_fares: {e}")
+        db.rollback()
+
     inserted = 0
     skipped = 0
     batch = []
+
+    def _save_batch(batch_list):
+        try:
+            db.execute(insert(StaticFare), batch_list)
+            db.commit()
+            return len(batch_list), 0
+        except Exception as batch_error:
+            db.rollback()
+            print(f"Error inserting batch: {batch_error}. Retrying row-by-row...")
+            row_success = 0
+            row_fail = 0
+            for item in batch_list:
+                try:
+                    db.execute(insert(StaticFare), [item])
+                    db.commit()
+                    row_success += 1
+                except Exception as row_error:
+                    db.rollback()
+                    row_fail += 1
+                    if row_fail <= 5:
+                        print(f"Failed row insert: {row_error}")
+            return row_success, row_fail
 
     try:
         with CSV_FILE.open(
@@ -40,14 +71,14 @@ def load_static_fares():
             ]
 
             required_columns = {
-                "Flight Name",
-                "Flight Number",
-                "Flight Date",
-                "From",
-                "Destination",
-                "Flight Time",
-                "Flight Class",
-                "Price",
+                "airline",
+                "flight_number",
+                "journey_date",
+                "origin",
+                "destination",
+                "departure_time",
+                "cabin_class",
+                "price",
             }
 
             actual_columns = set(reader.fieldnames or [])
@@ -72,19 +103,30 @@ def load_static_fares():
                         for key, value in row.items()
                     }
 
-                    carrier = row["Flight Name"]
-                    flight_number = row["Flight Number"]
-                    origin = row["From"]
-                    destination = row["Destination"]
-                    flight_time = row["Flight Time"]
-                    cabin_class = row["Flight Class"]
+                    # Filter out outliers and invalid status rows
+                    is_outlier_str = row.get("is_outlier", "False").strip().lower()
+                    if is_outlier_str in ("true", "1", "yes"):
+                        skipped += 1
+                        continue
+
+                    quality_status = row.get("quality_status", "VALID").strip().upper()
+                    if quality_status == "REJECTED":
+                        skipped += 1
+                        continue
+
+                    carrier = row["airline"]
+                    flight_number = row["flight_number"]
+                    origin = row["origin"]
+                    destination = row["destination"]
+                    flight_time = row["departure_time"]
+                    cabin_class = row["cabin_class"]
 
                     flight_date = datetime.strptime(
-                        row["Flight Date"],
+                        row["journey_date"],
                         "%Y-%m-%d",
                     ).date()
 
-                    total_fare = float(row["Price"])
+                    total_fare = float(row["price"])
 
                     if not carrier:
                         raise ValueError("Empty carrier")
@@ -107,6 +149,15 @@ def load_static_fares():
                             "Price must be greater than 0"
                         )
 
+                    # Extract nullable base_fare, taxes, advance_window
+                    advance_window = row.get("advance_window") or None
+                    
+                    base_fare_str = row.get("base_fare", "")
+                    base_fare = float(base_fare_str) if base_fare_str else None
+                    
+                    taxes_str = row.get("taxes", "")
+                    taxes = float(taxes_str) if taxes_str else None
+
                     batch.append(
                         {
                             "carrier": carrier,
@@ -116,22 +167,17 @@ def load_static_fares():
                             "destination": destination,
                             "flight_time": flight_time,
                             "cabin_class": cabin_class,
-                            "advance_window": None,
-                            "base_fare": None,
-                            "taxes": None,
+                            "advance_window": advance_window,
+                            "base_fare": base_fare,
+                            "taxes": taxes,
                             "total_fare": total_fare,
                         }
                     )
 
                     if len(batch) >= BATCH_SIZE:
-                        db.execute(
-                            insert(StaticFare),
-                            batch,
-                        )
-
-                        db.commit()
-
-                        inserted += len(batch)
+                        success_cnt, fail_cnt = _save_batch(batch)
+                        inserted += success_cnt
+                        skipped += fail_cnt
                         batch.clear()
 
                         print(
@@ -150,14 +196,9 @@ def load_static_fares():
 
             # Remaining rows
             if batch:
-                db.execute(
-                    insert(StaticFare),
-                    batch,
-                )
-
-                db.commit()
-
-                inserted += len(batch)
+                success_cnt, fail_cnt = _save_batch(batch)
+                inserted += success_cnt
+                skipped += fail_cnt
                 batch.clear()
 
         print()

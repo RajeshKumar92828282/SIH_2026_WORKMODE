@@ -1,0 +1,15 @@
+python run_pipeline.py # run run_pipeline
+Idempotent Database Static Fares Import:
+python -c "import sys; sys.path.append('src'); import loader.load_static_csv as ls; ls.load_static_fares()"
+Trigger One Manual Simulation Cycle:
+python src/scheduler.py --once
+Start the recurring 1-minute Scheduler Daemon:
+python src/scheduler.py
+Calculate APIx Weighting Index manually
+python -c "import sys; sys.path.append('src'); import index_engine.weighting as w; w.calculate_weighted_index()"
+
+Run All Unit & Integration Tests:
+powershell
+
+
+python -m pytest

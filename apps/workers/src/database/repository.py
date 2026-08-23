@@ -99,9 +99,7 @@ class FareRepository:
             select(LiveFare)
         ).all()
 
-    # ============================================================
-    # INDEX RESULTS
-    # ============================================================
+
 
     @staticmethod
     def add_index_result(
