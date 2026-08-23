@@ -20,7 +20,7 @@ export default function AlertsPage() {
           <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
             <Bell className="w-8 h-8 text-rose-400" /> Systemic Alerts & Anomaly Notifications
           </h1>
-          <p className="text-sm text-gray-400 mt-1">Real-time automated fare spike detectors (>25% intraday surge) and data quality monitors.</p>
+          <p className="text-sm text-gray-400 mt-1">Real-time automated fare spike detectors (&gt;25% intraday surge) and data quality monitors.</p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl border border-gray-800 space-y-4">

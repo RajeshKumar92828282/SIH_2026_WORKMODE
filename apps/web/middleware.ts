@@ -6,7 +6,7 @@ export function middleware(req: NextRequest) {
 
   // Only guard /api/v1/* routes
   if (pathname.startsWith('/api/v1')) {
-    const ip = req.ip || req.headers.get('x-forwarded-for') || '127.0.0.1';
+    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
     const rateCheck = checkRateLimit(ip, 120, 60000);
 
     if (!rateCheck.allowed) {

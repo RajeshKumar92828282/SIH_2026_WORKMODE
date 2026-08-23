@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   TrendingUp,
-  GitRoute,
+  Navigation,
   Clock,
   Plane,
   MapPin,
@@ -17,7 +17,7 @@ import {
 
 const navItems = [
   { name: 'Index Overview', href: '/', icon: TrendingUp },
-  { name: 'Route Trend Analysis', href: '/routes', icon: GitRoute },
+  { name: 'Route Trend Analysis', href: '/routes', icon: Navigation },
   { name: 'Lead-Time Analysis', href: '/lead-time', icon: Clock },
   { name: 'Airline Comparison', href: '/airlines', icon: Plane },
   { name: 'India Heatmap', href: '/heatmap', icon: MapPin },
