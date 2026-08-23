@@ -98,22 +98,37 @@ model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String   @map("password_hash")
-  role         String   @default("api_consumer") // admin, api_consumer
+  role         String   @default("analyst") // admin, analyst
   createdAt    DateTime @default(now()) @map("created_at")
 
   @@map("users")
 }
 
-model ApiKey {
-  id        String    @id @default(cuid())
-  orgId     String    @map("org_id")
-  keyHash   String    @unique @map("key_hash")
-  keyMask   String    @map("key_mask") // e.g. apix_live_...a8f2
-  scope     String    @default("read:index")
-  rateTier  String    @default("standard") @map("rate_tier")
-  createdAt DateTime  @default(now()) @map("created_at")
-  revokedAt DateTime? @map("revoked_at")
+model Organization {
+  id           String   @id @default(cuid())
+  name         String
+  type         String   // "rbi", "nso", "researcher", "govt_agency"
+  contactEmail String?  @map("contact_email")
+  createdAt    DateTime @default(now()) @map("created_at")
 
+  apiKeys      ApiKey[]
+
+  @@map("organizations")
+}
+
+model ApiKey {
+  id           String       @id @default(cuid())
+  orgId        String       @map("org_id")
+  keyHash      String       @unique @map("key_hash")
+  keyMask      String       @map("key_mask") // e.g. apix_live_...a8f2
+  scope        String       @default("read:index")
+  rateTier     String       @default("standard") @map("rate_tier")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  revokedAt    DateTime?    @map("revoked_at")
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
   @@map("api_keys")
 }
 
@@ -126,6 +141,7 @@ model Alert {
 
   route Route? @relation(fields: [routeId], references: [id], onDelete: SetNull)
 
+  @@index([createdAt])
   @@map("alerts")
 }
 
@@ -136,5 +152,7 @@ model AuditLog {
   target    String
   createdAt DateTime @default(now()) @map("created_at")
 
+  @@index([createdAt])
   @@map("audit_logs")
 }
+

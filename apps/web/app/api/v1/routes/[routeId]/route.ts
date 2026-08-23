@@ -3,10 +3,10 @@ import { db } from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { routeId: string } }
+  { params }: { params: Promise<{ routeId: string }> }
 ) {
   try {
-    const routeId = params.routeId;
+    const { routeId } = await params;
     const route = await db.route.findUnique({
       where: { id: routeId }
     });

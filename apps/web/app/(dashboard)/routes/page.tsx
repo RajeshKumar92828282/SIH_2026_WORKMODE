@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { HeaderBar } from '@/components/layout/HeaderBar';
 import { apiClient } from '@/lib/api-client';
-import { GitRoute, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Navigation, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 export default function RoutesPage() {
   const [routes, setRoutes] = useState<any[]>([]);
@@ -18,7 +18,7 @@ export default function RoutesPage() {
       <main className="p-8 space-y-8 flex-1 max-w-7xl w-full mx-auto">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-            <GitRoute className="w-8 h-8 text-blue-400" /> Route Trend Analysis
+            <Navigation className="w-8 h-8 text-blue-400" /> Route Trend Analysis
           </h1>
           <p className="text-sm text-gray-400 mt-1">Per-corridor airfare relative price index breakdown across top domestic routes.</p>
         </div>
