@@ -1,0 +1,28 @@
+{
+  "pipeline_run_timestamp": "2026-08-23T10:20:47.191899Z",
+  "duration_seconds": 24.497543,
+  "datasets_processed": 1,
+  "total_rows_loaded": 300153,
+  "duplicates_removed": 75146,
+  "outliers_flagged": 36040,
+  "accepted_records": 225007,
+  "rejected_records": 0,
+  "dataset_statistics": {
+    "Complete_Cleaned_Flight_Dataset_2026.csv": {
+      "rows_loaded": 300153,
+      "accepted_before_deduplication": 300153,
+      "rejected": 0,
+      "mapped_columns": [
+        "airline",
+        "flight_number",
+        "journey_date",
+        "origin",
+        "destination",
+        "departure_time",
+        "cabin_class",
+        "price"
+      ],
+      "unmapped_columns": []
+    }
+  }
+}
