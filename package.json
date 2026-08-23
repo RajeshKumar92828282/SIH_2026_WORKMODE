@@ -1,0 +1,21 @@
+{
+  "name": "apix-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "dev:workers": "npm --prefix apps/workers run start",
+    "db:generate": "npm --prefix packages/db run db:generate",
+    "workers:tick": "npm --prefix apps/workers run tick"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  }
+}

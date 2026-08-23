@@ -1,0 +1,20 @@
+{
+  "name": "@apix/workers",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "load": "ts-node src/loader/load_static_csv.ts",
+    "tick": "ts-node src/tick.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "csv-parse": "^5.5.5",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

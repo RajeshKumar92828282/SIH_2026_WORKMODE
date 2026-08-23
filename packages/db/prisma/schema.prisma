@@ -1,0 +1,140 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Route {
+  id          String   @id // e.g., "DEL-BOM"
+  origin      String
+  destination String
+  weight      Float    // DGCA passenger traffic weight share (0.0 to 1.0)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  staticFares  StaticFare[]
+  liveFares    LiveFare[]
+  indexResults IndexResult[]
+  alerts       Alert[]
+
+  @@map("routes")
+}
+
+model Carrier {
+  id        String   @id // e.g., "IGO", "SEJ"
+  name      String   // e.g., "IndiGo", "SpiceJet"
+  code      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  staticFares  StaticFare[]
+  liveFares    LiveFare[]
+  indexResults IndexResult[]
+
+  @@map("carriers")
+}
+
+model StaticFare {
+  id             Int      @id @default(autoincrement())
+  routeId        String   @map("route_id")
+  carrierId      String   @map("carrier_id")
+  leadTimeWindow String   @map("lead_time_window") // T+1, T+15
+  baseFare       Decimal  @map("base_fare") @db.Decimal(10, 2)
+  taxes          Decimal  @db.Decimal(10, 2)
+  fees           Decimal  @db.Decimal(10, 2)
+  totalFare      Decimal  @map("total_fare") @db.Decimal(10, 2)
+  loadedAt       DateTime @default(now()) @map("loaded_at")
+
+  route   Route   @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  carrier Carrier @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+
+  @@unique([routeId, carrierId, leadTimeWindow])
+  @@map("static_fares")
+}
+
+model LiveFare {
+  id             Int      @id @default(autoincrement())
+  routeId        String   @map("route_id")
+  carrierId      String   @map("carrier_id")
+  leadTimeWindow String   @map("lead_time_window") // T+1, T+15
+  baseFare       Decimal  @map("base_fare") @db.Decimal(10, 2)
+  taxes          Decimal  @db.Decimal(10, 2)
+  fees           Decimal  @db.Decimal(10, 2)
+  totalFare      Decimal  @map("total_fare") @db.Decimal(10, 2)
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  tick           Int      @default(0)
+
+  route   Route   @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  carrier Carrier @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+
+  @@unique([routeId, carrierId, leadTimeWindow])
+  @@map("live_fares")
+}
+
+model IndexResult {
+  id                Int      @id @default(autoincrement())
+  computedAt        DateTime @map("computed_at") // Common timestamp per tick
+  routeId           String   @map("route_id")
+  carrierId         String   @map("carrier_id")
+  leadTimeWindow    String   @map("lead_time_window")
+  staticTotalFare   Decimal  @map("static_total_fare") @db.Decimal(10, 2)
+  liveTotalFare     Decimal  @map("live_total_fare") @db.Decimal(10, 2)
+  fareDiff          Decimal  @map("fare_diff") @db.Decimal(10, 2)
+  pctChange         Float    @map("pct_change")
+  relativePrice     Float    @map("relative_price")
+  routeWeight       Float    @map("route_weight")
+  indexContribution Float    @map("index_contribution")
+
+  route   Route   @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  carrier Carrier @relation(fields: [carrierId], references: [id], onDelete: Cascade)
+
+  @@index([computedAt])
+  @@index([routeId, computedAt])
+  @@map("index_results")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("api_consumer") // admin, api_consumer
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  orgId     String    @map("org_id")
+  keyHash   String    @unique @map("key_hash")
+  keyMask   String    @map("key_mask") // e.g. apix_live_...a8f2
+  scope     String    @default("read:index")
+  rateTier  String    @default("standard") @map("rate_tier")
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  @@map("api_keys")
+}
+
+model Alert {
+  id        Int      @id @default(autoincrement())
+  type      String   // FARE_SPIKE, DATA_QUALITY
+  routeId   String?  @map("route_id")
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  route Route? @relation(fields: [routeId], references: [id], onDelete: SetNull)
+
+  @@map("alerts")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  actor     String
+  action    String
+  target    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
