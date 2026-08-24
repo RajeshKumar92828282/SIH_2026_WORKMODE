@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { CreateOrgSchema } from '@/lib/validation';
 import { createAuditLog } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const orgs = await db.organization.findMany({
       include: {
@@ -38,6 +41,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = await req.json();
     const parsed = CreateOrgSchema.parse(body);

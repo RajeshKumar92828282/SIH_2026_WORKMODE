@@ -1,60 +1,47 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireApiKey } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireApiKey(req as any, 'read:index');
+  if (auth instanceof NextResponse) return auth;
+
   try {
-    // 1. T+1 (Short-term / Urgent booking)
+    // Use actual advance_window field instead of flight_time heuristics
     const t1Live = await db.liveFare.aggregate({
       where: {
-        OR: [
-          { advanceWindow: 'T+1' },
-          { advanceWindow: { contains: '1' } },
-          { flightTime: { in: ['Early_Morning', 'Morning'] } }
-        ]
+        advanceWindow: 'T+1'
       },
       _avg: { totalFare: true }
     });
 
     const t1Static = await db.staticFare.aggregate({
       where: {
-        OR: [
-          { advanceWindow: 'T+1' },
-          { advanceWindow: { contains: '1' } },
-          { flightTime: { in: ['Early_Morning', 'Morning'] } }
-        ]
+        advanceWindow: 'T+1'
       },
       _avg: { totalFare: true }
     });
 
-    // 2. T+15 (Advance / Planned booking)
     const t15Live = await db.liveFare.aggregate({
       where: {
-        OR: [
-          { advanceWindow: 'T+15' },
-          { advanceWindow: { contains: '15' } },
-          { flightTime: { in: ['Afternoon', 'Evening', 'Night'] } }
-        ]
+        advanceWindow: 'T+15'
       },
       _avg: { totalFare: true }
     });
 
     const t15Static = await db.staticFare.aggregate({
       where: {
-        OR: [
-          { advanceWindow: 'T+15' },
-          { advanceWindow: { contains: '15' } },
-          { flightTime: { in: ['Afternoon', 'Evening', 'Night'] } }
-        ]
+        advanceWindow: 'T+15'
       },
       _avg: { totalFare: true }
     });
 
-    const t1LiveAvg = t1Live._avg.totalFare || 6850;
-    const t1StaticAvg = t1Static._avg.totalFare || 6400;
+    const t1LiveAvg = t1Live._avg.totalFare || 0;
+    const t1StaticAvg = t1Static._avg.totalFare || 0;
     const t1Pct = t1StaticAvg > 0 ? ((t1LiveAvg - t1StaticAvg) / t1StaticAvg) * 100 : 0;
 
-    const t15LiveAvg = t15Live._avg.totalFare || 4250;
-    const t15StaticAvg = t15Static._avg.totalFare || 4180;
+    const t15LiveAvg = t15Live._avg.totalFare || 0;
+    const t15StaticAvg = t15Static._avg.totalFare || 0;
     const t15Pct = t15StaticAvg > 0 ? ((t15LiveAvg - t15StaticAvg) / t15StaticAvg) * 100 : 0;
 
     const result = [
@@ -64,7 +51,7 @@ export async function GET() {
         avgLiveFare: Math.round(t1LiveAvg),
         avgStaticFare: Math.round(t1StaticAvg),
         pctChange: Math.round(t1Pct * 100) / 100,
-        premium: '+45% (Urgency Premium)'
+        premium: t1Pct > 0 ? `+${Math.round(t1Pct)}% (Urgency Premium)` : 'Base'
       },
       {
         window: 'T+15',

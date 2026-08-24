@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { AuditLogQuerySchema } from '@/lib/validation';
+import { requireAdmin } from '@/lib/auth-middleware';
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const { searchParams } = new URL(req.url);
     const query = AuditLogQuerySchema.parse(Object.fromEntries(searchParams));

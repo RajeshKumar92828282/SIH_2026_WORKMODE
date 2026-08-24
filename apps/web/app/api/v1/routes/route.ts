@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireApiKey } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireApiKey(req as any, 'read:routes');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const routes = await db.route.findMany({
       orderBy: { weight: 'desc' }
@@ -17,12 +21,11 @@ export async function GET() {
 
     const enrichedRoutes = await Promise.all(
       routes.map(async (r) => {
-        // 1. Matching index relative price
+        // 1. Matching index relative price - exact origin/destination matching
         const matchingIndexRows = latestRows.filter(
           (row) =>
             (row.origin === r.origin && row.destination === r.destination) ||
-            (row.origin === r.destination && row.destination === r.origin) ||
-            (r.id.includes(row.origin) && r.id.includes(row.destination))
+            (row.origin === r.destination && row.destination === r.origin)
         );
 
         const avgRelativePrice =
@@ -35,7 +38,7 @@ export async function GET() {
           where: {
             OR: [
               { origin: r.origin, destination: r.destination },
-              { origin: r.origin === 'DEL' ? 'Delhi' : r.origin === 'BOM' ? 'Mumbai' : 'Bangalore', destination: r.destination === 'BOM' ? 'Mumbai' : r.destination === 'BLR' ? 'Bangalore' : 'Delhi' }
+              { origin: r.destination, destination: r.origin }
             ]
           },
           _avg: { totalFare: true }
@@ -46,7 +49,7 @@ export async function GET() {
           where: {
             OR: [
               { origin: r.origin, destination: r.destination },
-              { origin: r.origin === 'DEL' ? 'Delhi' : r.origin === 'BOM' ? 'Mumbai' : 'Bangalore', destination: r.destination === 'BOM' ? 'Mumbai' : r.destination === 'BLR' ? 'Bangalore' : 'Delhi' }
+              { origin: r.destination, destination: r.origin }
             ]
           },
           _avg: { totalFare: true }

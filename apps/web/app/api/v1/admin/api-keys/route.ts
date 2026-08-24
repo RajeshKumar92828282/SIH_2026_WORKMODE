@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { generateApiKey, createAuditLog } from '@/lib/auth';
 import { CreateApiKeySchema } from '@/lib/validation';
+import { requireAdmin } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const keys = await db.apiKey.findMany({
       include: {
@@ -40,6 +43,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = await req.json();
     const parsed = CreateApiKeySchema.parse(body);
@@ -102,6 +107,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = await req.json();
     const { id, action } = body;

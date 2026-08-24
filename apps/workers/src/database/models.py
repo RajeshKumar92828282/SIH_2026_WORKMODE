@@ -1,10 +1,14 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 import uuid
 
 from sqlalchemy import Date, DateTime, Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.connection import Base
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class StaticFare(Base):
@@ -79,7 +83,7 @@ class StaticFare(Base):
     # When this observation entered our system
     observed_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=utc_now,
         nullable=False,
     )
 
@@ -152,7 +156,7 @@ class LiveFare(Base):
 
     observed_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=utc_now,
         nullable=False,
     )
 
@@ -193,7 +197,7 @@ class IndexResult(Base):
 
     observed_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=utc_now,
         nullable=False,
     )
 

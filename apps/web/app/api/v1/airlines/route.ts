@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireApiKey } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireApiKey(req as any, 'read:index');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const carriers = await db.carrier.findMany({
       orderBy: { name: 'asc' }
@@ -9,13 +13,12 @@ export async function GET() {
 
     const carrierStats = await Promise.all(
       carriers.map(async (c) => {
-        // Match carrier by name or variations in live_fares (e.g. 'IndiGo' / 'Indigo', 'SpiceJet')
+        // Match carrier by exact name or code
         const liveAgg = await db.liveFare.aggregate({
           where: {
             OR: [
-              { carrier: { equals: c.name, mode: 'insensitive' } },
-              { carrier: { contains: c.name, mode: 'insensitive' } },
-              { carrier: { contains: c.id, mode: 'insensitive' } }
+              { carrier: c.name },
+              { carrier: c.code }
             ]
           },
           _avg: { totalFare: true }
@@ -24,9 +27,8 @@ export async function GET() {
         const staticAgg = await db.staticFare.aggregate({
           where: {
             OR: [
-              { carrier: { equals: c.name, mode: 'insensitive' } },
-              { carrier: { contains: c.name, mode: 'insensitive' } },
-              { carrier: { contains: c.id, mode: 'insensitive' } }
+              { carrier: c.name },
+              { carrier: c.code }
             ]
           },
           _avg: { totalFare: true }

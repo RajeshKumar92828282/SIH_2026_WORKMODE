@@ -2,16 +2,41 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Lock, Mail } from 'lucide-react';
+import { ShieldCheck, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('analyst@rbi.org.in');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('admin@apix.gov.in');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/');
+    setError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error?.message || 'Login failed');
+        return;
+      }
+
+      router.push('/');
+      router.refresh();
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -25,6 +50,13 @@ export default function LoginPage() {
           <p className="text-xs text-gray-400">Reserve Bank of India & NSO Analyst Portal</p>
         </div>
 
+        {error && (
+          <div className="flex items-center gap-2 text-red-400 text-xs bg-red-900/20 border border-red-900/50 rounded-lg p-3">
+            <AlertCircle className="w-4 h-4" />
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleLogin} className="space-y-4 text-xs">
           <div>
             <label className="block text-gray-400 font-medium mb-1">Official Email</label>
@@ -36,6 +68,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-9 pr-4 py-2.5 text-white"
                 required
+                disabled={loading}
               />
             </div>
           </div>
@@ -50,15 +83,18 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-9 pr-4 py-2.5 text-white"
                 required
+                disabled={loading}
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-blue-500/20 mt-2"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-blue-500/20 mt-2 flex items-center justify-center gap-2"
           >
-            Authenticate Session
+            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+            {loading ? 'Authenticating...' : 'Authenticate Session'}
           </button>
         </form>
       </div>

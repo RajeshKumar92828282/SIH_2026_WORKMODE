@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { ObservationsQuerySchema } from '@/lib/validation';
+import { requireApiKey } from '@/lib/auth-middleware';
 
 export async function GET(req: NextRequest) {
+  const auth = await requireApiKey(req, 'read:observations');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { searchParams } = new URL(req.url);
     const query = ObservationsQuerySchema.parse(Object.fromEntries(searchParams));
@@ -13,7 +17,7 @@ export async function GET(req: NextRequest) {
       if (parts.length === 2) {
         where.OR = [
           { origin: parts[0], destination: parts[1] },
-          { origin: parts[0] === 'DEL' ? 'Delhi' : parts[0] === 'BOM' ? 'Mumbai' : 'Bangalore', destination: parts[1] === 'BOM' ? 'Mumbai' : parts[1] === 'BLR' ? 'Bangalore' : 'Delhi' }
+          { origin: parts[1], destination: parts[0] }
         ];
       }
     }

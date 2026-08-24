@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireApiKey } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireApiKey(req as any, 'read:index');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     // 1. Fetch latest observed_at from index_results (DB3)
     const latestRecord = await db.indexResult.findFirst({
@@ -32,14 +36,13 @@ export async function GET() {
       orderBy: { weight: 'desc' }
     });
 
-    // 4. Calculate weighted sum for current tick
+    // 4. Calculate weighted sum for current tick - use exact origin/destination matching
     let currentIndex = 0;
     for (const r of routes) {
       const matchingRows = latestRows.filter(
         (row) =>
           (row.origin === r.origin && row.destination === r.destination) ||
-          (row.origin === r.destination && row.destination === r.origin) ||
-          (r.id.includes(row.origin) && r.id.includes(row.destination))
+          (row.origin === r.destination && row.destination === r.origin)
       );
 
       const avgRouteIndex =
@@ -67,8 +70,7 @@ export async function GET() {
         const matchingRows = prevRows.filter(
           (row) =>
             (row.origin === r.origin && row.destination === r.destination) ||
-            (row.origin === r.destination && row.destination === r.origin) ||
-            (r.id.includes(row.origin) && r.id.includes(row.destination))
+            (row.origin === r.destination && row.destination === r.origin)
         );
         const avgRouteIndex =
           matchingRows.length > 0
@@ -92,8 +94,6 @@ export async function GET() {
         currentIndex: Math.round(currentIndex * 100) / 100,
         prevIndex: Math.round(prevIndex * 100) / 100,
         pctChange24h: Math.round(pctChange24h * 100) / 100,
-        intradayMin: Math.round(currentIndex * 0.96 * 100) / 100,
-        intradayMax: Math.round(currentIndex * 1.05 * 100) / 100,
         lastUpdated: latestObservedAt.toISOString(),
         sampleCount: latestRows.length,
         runId: latestRecord.runId,

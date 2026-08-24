@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireApiKey } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireApiKey(req as any, 'read:index');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const latestRecord = await db.indexResult.findFirst({
       orderBy: { observedAt: 'desc' }
@@ -11,18 +15,42 @@ export async function GET() {
       ? await db.indexResult.findMany({ where: { observedAt: latestRecord.observedAt } })
       : [];
 
-    const hubs = [
-      { state: 'Delhi (NCR)', code: 'DEL', match: ['DEL', 'Delhi'], hub: 'Indira Gandhi Intl (DEL)' },
-      { state: 'Maharashtra', code: 'MH', match: ['BOM', 'Mumbai'], hub: 'Chhatrapati Shivaji Intl (BOM)' },
-      { state: 'Karnataka', code: 'KA', match: ['BLR', 'Bangalore', 'Bengaluru'], hub: 'Kempegowda Intl (BLR)' },
-      { state: 'Tamil Nadu', code: 'TN', match: ['MAA', 'Chennai'], hub: 'Chennai Intl (MAA)' },
-      { state: 'West Bengal', code: 'WB', match: ['CCU', 'Kolkata'], hub: 'Netaji Subhash Chandra Bose (CCU)' },
-      { state: 'Telangana', code: 'TG', match: ['HYD', 'Hyderabad'], hub: 'Rajiv Gandhi Intl (HYD)' }
-    ];
+    // Get actual routes from DB
+    const routes = await db.route.findMany({
+      select: { origin: true, destination: true, weight: true }
+    });
 
-    const stateHeatmap = hubs.map((h) => {
+    // Build state mapping from actual routes
+    const stateMap = new Map<string, { state: string; code: string; hub: string; origins: string[] }>();
+    
+    for (const route of routes) {
+      const originState = getStateFromAirport(route.origin);
+      const destState = getStateFromAirport(route.destination);
+      
+      if (!stateMap.has(originState.code)) {
+        stateMap.set(originState.code, { 
+          state: originState.state, 
+          code: originState.code, 
+          hub: originState.hub,
+          origins: [] 
+        });
+      }
+      stateMap.get(originState.code)!.origins.push(route.origin);
+      
+      if (!stateMap.has(destState.code)) {
+        stateMap.set(destState.code, { 
+          state: destState.state, 
+          code: destState.code, 
+          hub: destState.hub,
+          origins: [] 
+        });
+      }
+      stateMap.get(destState.code)!.origins.push(route.destination);
+    }
+
+    const stateHeatmap = Array.from(stateMap.values()).map((h) => {
       const matchingRows = latestRows.filter(
-        (row) => h.match.includes(row.origin) || h.match.includes(row.destination)
+        (row) => h.origins.includes(row.origin) || h.origins.includes(row.destination)
       );
 
       const avgIndex =
@@ -53,4 +81,16 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+function getStateFromAirport(airport: string): { state: string; code: string; hub: string } {
+  const airportMap: Record<string, { state: string; code: string; hub: string }> = {
+    'DEL': { state: 'Delhi (NCR)', code: 'DL', hub: 'Indira Gandhi Intl (DEL)' },
+    'BOM': { state: 'Maharashtra', code: 'MH', hub: 'Chhatrapati Shivaji Intl (BOM)' },
+    'BLR': { state: 'Karnataka', code: 'KA', hub: 'Kempegowda Intl (BLR)' },
+    'MAA': { state: 'Tamil Nadu', code: 'TN', hub: 'Chennai Intl (MAA)' },
+    'CCU': { state: 'West Bengal', code: 'WB', hub: 'Netaji Subhash Chandra Bose (CCU)' },
+    'HYD': { state: 'Telangana', code: 'TG', hub: 'Rajiv Gandhi Intl (HYD)' },
+  };
+  return airportMap[airport] || { state: 'Unknown', code: 'UN', hub: 'Unknown' };
 }

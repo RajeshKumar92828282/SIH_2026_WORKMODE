@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { UpdateUserRoleSchema } from '@/lib/validation';
 import { createAuditLog } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-middleware';
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const { id: userId } = await params;
     const body = await req.json();

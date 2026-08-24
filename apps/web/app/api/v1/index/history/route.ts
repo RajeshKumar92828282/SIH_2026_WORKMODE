@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { IndexHistoryQuerySchema } from '@/lib/validation';
+import { requireApiKey } from '@/lib/auth-middleware';
 
 export async function GET(req: NextRequest) {
+  const auth = await requireApiKey(req, 'read:index');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const { searchParams } = new URL(req.url);
     const query = IndexHistoryQuerySchema.parse(Object.fromEntries(searchParams));
@@ -12,11 +16,20 @@ export async function GET(req: NextRequest) {
       orderBy: { weight: 'desc' }
     });
 
-    // 2. Fetch distinct run timestamps from index_results (DB3)
+    // 2. Build where clause for from/to filters
+    const where: any = {};
+    if (query.from || query.to) {
+      where.observedAt = {};
+      if (query.from) where.observedAt.gte = new Date(query.from);
+      if (query.to) where.observedAt.lte = new Date(query.to);
+    }
+
+    // 3. Fetch distinct run timestamps from index_results (DB3) - latest first
     const distinctRuns = await db.indexResult.findMany({
+      where,
       select: { observedAt: true, runId: true },
       distinct: ['observedAt'],
-      orderBy: { observedAt: 'asc' },
+      orderBy: { observedAt: 'desc' },
       take: query.limit
     });
 
@@ -30,12 +43,24 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // 4. Single query to fetch all index_results for all runs (fixes N+1)
+    const runTimestamps = distinctRuns.map(r => r.observedAt);
+    const allRows = await db.indexResult.findMany({
+      where: { observedAt: { in: runTimestamps } }
+    });
+
+    // Group rows by observedAt for efficient lookup
+    const rowsByRun = new Map<string, typeof allRows>();
+    for (const row of allRows) {
+      const key = row.observedAt.toISOString();
+      if (!rowsByRun.has(key)) rowsByRun.set(key, []);
+      rowsByRun.get(key)!.push(row);
+    }
+
     const historyPoints = [];
 
     for (const run of distinctRuns) {
-      const rows = await db.indexResult.findMany({
-        where: { observedAt: run.observedAt }
-      });
+      const rows = rowsByRun.get(run.observedAt.toISOString()) || [];
 
       let totalIndex = 0;
       let delBomContrib = 0;
@@ -46,8 +71,7 @@ export async function GET(req: NextRequest) {
         const matchingRows = rows.filter(
           (row) =>
             (row.origin === r.origin && row.destination === r.destination) ||
-            (row.origin === r.destination && row.destination === r.origin) ||
-            (r.id.includes(row.origin) && r.id.includes(row.destination))
+            (row.origin === r.destination && row.destination === r.origin)
         );
 
         const avgRouteIndex =

@@ -14,6 +14,14 @@ function hashApiKey(key: string): string {
   return crypto.createHash('sha256').update(key).digest('hex');
 }
 
+function generateApiKey(): { apiKey: string; keyHash: string; keyMask: string } {
+  const randomBytes = crypto.randomBytes(16).toString('hex');
+  const apiKey = `apix_live_${randomBytes}`;
+  const keyHash = hashApiKey(apiKey);
+  const keyMask = `apix_live_...${randomBytes.slice(-4)}`;
+  return { apiKey, keyHash, keyMask };
+}
+
 export async function seedDatabase() {
   console.log('[SEED] Starting supporting & admin provisioning...');
 
@@ -107,10 +115,8 @@ export async function seedDatabase() {
   });
   console.log(`[SEED] Admin account established: ${adminUser.email} (role: ${adminUser.role})`);
 
-  // 5. Seed Institutional API Key for RBI Demo
-  const rbiRawKey = 'apix_live_rbi_demo_institution_key_2026';
-  const rbiKeyHash = hashApiKey(rbiRawKey);
-  const rbiKeyMask = 'apix_live_...2026';
+  // 5. Seed Institutional API Key for RBI Demo (generate random, not hardcoded)
+  const { apiKey: rbiRawKey, keyHash: rbiKeyHash, keyMask: rbiKeyMask } = generateApiKey();
 
   await prisma.apiKey.upsert({
     where: { keyHash: rbiKeyHash },
@@ -128,6 +134,7 @@ export async function seedDatabase() {
     }
   });
   console.log(`[SEED] Demo Institutional API Key provisioned: ${rbiKeyMask}`);
+  console.log(`[SEED] IMPORTANT: Save this key securely - it will not be shown again: ${rbiRawKey}`);
 
   // 6. Record System Audit Log
   await prisma.auditLog.create({
