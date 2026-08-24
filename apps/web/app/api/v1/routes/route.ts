@@ -1,37 +1,63 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireApiKey } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireApiKey(req as any, 'read:routes');
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const routes = await db.route.findMany({
-      orderBy: { id: 'asc' }
+      orderBy: { weight: 'desc' }
     });
 
-    const latestTickRecord = await db.indexResult.findFirst({
-      orderBy: { computedAt: 'desc' }
+    const latestRecord = await db.indexResult.findFirst({
+      orderBy: { observedAt: 'desc' }
     });
+
+    const latestRows = latestRecord
+      ? await db.indexResult.findMany({ where: { observedAt: latestRecord.observedAt } })
+      : [];
 
     const enrichedRoutes = await Promise.all(
       routes.map(async (r) => {
-        let avgRelativePrice = 100.0;
-        let avgLiveFare = 0.0;
-        let avgStaticFare = 0.0;
+        // 1. Matching index relative price - exact origin/destination matching
+        const matchingIndexRows = latestRows.filter(
+          (row) =>
+            (row.origin === r.origin && row.destination === r.destination) ||
+            (row.origin === r.destination && row.destination === r.origin)
+        );
 
-        if (latestTickRecord) {
-          const routeRows = await db.indexResult.findMany({
-            where: {
-              computedAt: latestTickRecord.computedAt,
-              routeId: r.id
-            }
-          });
+        const avgRelativePrice =
+          matchingIndexRows.length > 0
+            ? matchingIndexRows.reduce((acc, row) => acc + row.indexValue, 0) / matchingIndexRows.length
+            : 100.0;
 
-          if (routeRows.length > 0) {
-            const sumRel = routeRows.reduce((acc, row) => acc + row.relativePrice, 0);
-            avgRelativePrice = sumRel / routeRows.length;
-            avgLiveFare = routeRows.reduce((acc, row) => acc + Number(row.liveTotalFare), 0) / routeRows.length;
-            avgStaticFare = routeRows.reduce((acc, row) => acc + Number(row.staticTotalFare), 0) / routeRows.length;
-          }
-        }
+        // 2. Average live fare from live_fares (DB2)
+        const liveStats = await db.liveFare.aggregate({
+          where: {
+            OR: [
+              { origin: r.origin, destination: r.destination },
+              { origin: r.destination, destination: r.origin }
+            ]
+          },
+          _avg: { totalFare: true }
+        });
+
+        // 3. Average static fare from static_fares (DB1)
+        const staticStats = await db.staticFare.aggregate({
+          where: {
+            OR: [
+              { origin: r.origin, destination: r.destination },
+              { origin: r.destination, destination: r.origin }
+            ]
+          },
+          _avg: { totalFare: true }
+        });
+
+        const avgLiveFare = liveStats._avg.totalFare || 0;
+        const avgStaticFare = staticStats._avg.totalFare || 0;
+        const fareChangePct = avgRelativePrice - 100;
 
         return {
           id: r.id,
@@ -42,7 +68,7 @@ export async function GET() {
           relativePrice: Math.round(avgRelativePrice * 100) / 100,
           avgLiveFare: Math.round(avgLiveFare),
           avgStaticFare: Math.round(avgStaticFare),
-          fareChangePct: Math.round(((avgRelativePrice - 100)) * 100) / 100
+          fareChangePct: Math.round(fareChangePct * 100) / 100
         };
       })
     );
@@ -52,47 +78,10 @@ export async function GET() {
       meta: { generated_at: new Date().toISOString() }
     });
   } catch (error) {
-    console.warn('[API GET /api/v1/routes] DB offline or error, returning baseline route basket.');
-    return NextResponse.json({
-      data: [
-        {
-          id: 'DEL-BOM',
-          origin: 'Delhi',
-          destination: 'Mumbai',
-          weight: 0.45,
-          weightPercentage: '45%',
-          relativePrice: 106.2,
-          avgLiveFare: 6250,
-          avgStaticFare: 5880,
-          fareChangePct: 6.2
-        },
-        {
-          id: 'DEL-BLR',
-          origin: 'Delhi',
-          destination: 'Bengaluru',
-          weight: 0.35,
-          weightPercentage: '35%',
-          relativePrice: 104.5,
-          avgLiveFare: 7100,
-          avgStaticFare: 6790,
-          fareChangePct: 4.5
-        },
-        {
-          id: 'BOM-BLR',
-          origin: 'Mumbai',
-          destination: 'Bengaluru',
-          weight: 0.20,
-          weightPercentage: '20%',
-          relativePrice: 102.1,
-          avgLiveFare: 4950,
-          avgStaticFare: 4850,
-          fareChangePct: 2.1
-        }
-      ],
-      meta: {
-        generated_at: new Date().toISOString(),
-        is_sample_data: true
-      }
-    });
+    console.error('[API GET /api/v1/routes ERROR]', error);
+    return NextResponse.json(
+      { error: { code: 'internal_server_error', message: 'Failed to fetch routes' } },
+      { status: 500 }
+    );
   }
 }

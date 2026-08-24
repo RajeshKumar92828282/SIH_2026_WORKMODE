@@ -1,87 +1,111 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireApiKey } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireApiKey(req as any, 'read:index');
+  if (auth instanceof NextResponse) return auth;
+
   try {
-    // Get the latest tick computedAt timestamp
-    const latestTickRecord = await db.indexResult.findFirst({
-      orderBy: { computedAt: 'desc' }
+    // 1. Fetch latest observed_at from index_results (DB3)
+    const latestRecord = await db.indexResult.findFirst({
+      orderBy: { observedAt: 'desc' }
     });
 
-    if (!latestTickRecord) {
-      // Fallback response if DB not ticked yet
-      return NextResponse.json({
-        data: {
-          currentIndex: 100.0,
-          prevIndex: 100.0,
-          pctChange24h: 0.0,
-          intradayMin: 100.0,
-          intradayMax: 100.0,
-          lastUpdated: new Date().toISOString(),
-          sampleCount: 0,
-          status: 'STABLE'
+    if (!latestRecord) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'no_data',
+            message: 'No computed index results available in database'
+          }
         },
-        meta: { generated_at: new Date().toISOString() }
-      });
+        { status: 404 }
+      );
     }
 
-    const latestComputedAt = latestTickRecord.computedAt;
+    const latestObservedAt = latestRecord.observedAt;
 
-    // Fetch all index_results for latest tick
+    // 2. Fetch all index_results for the latest run
     const latestRows = await db.indexResult.findMany({
-      where: { computedAt: latestComputedAt }
+      where: { observedAt: latestObservedAt }
     });
 
-    // Overall index = sum(indexContribution) across all rows in latest tick
-    const currentIndex = latestRows.reduce((acc, row) => acc + Number(row.indexContribution), 0);
+    // 3. Fetch basket routes with weights
+    const routes = await db.route.findMany({
+      orderBy: { weight: 'desc' }
+    });
 
-    // Fetch previous tick to compute change
-    const prevTickRecord = await db.indexResult.findFirst({
-      where: { computedAt: { lt: latestComputedAt } },
-      orderBy: { computedAt: 'desc' }
+    // 4. Calculate weighted sum for current tick - use exact origin/destination matching
+    let currentIndex = 0;
+    for (const r of routes) {
+      const matchingRows = latestRows.filter(
+        (row) =>
+          (row.origin === r.origin && row.destination === r.destination) ||
+          (row.origin === r.destination && row.destination === r.origin)
+      );
+
+      const avgRouteIndex =
+        matchingRows.length > 0
+          ? matchingRows.reduce((acc, row) => acc + row.indexValue, 0) / matchingRows.length
+          : 100.0;
+
+      currentIndex += r.weight * avgRouteIndex;
+    }
+
+    // 5. Fetch previous run for change calculation
+    const prevRecord = await db.indexResult.findFirst({
+      where: { observedAt: { lt: latestObservedAt } },
+      orderBy: { observedAt: 'desc' }
     });
 
     let prevIndex = currentIndex;
-    if (prevTickRecord) {
+    if (prevRecord) {
       const prevRows = await db.indexResult.findMany({
-        where: { computedAt: prevTickRecord.computedAt }
+        where: { observedAt: prevRecord.observedAt }
       });
-      prevIndex = prevRows.reduce((acc, row) => acc + Number(row.indexContribution), 0);
+
+      let calcPrev = 0;
+      for (const r of routes) {
+        const matchingRows = prevRows.filter(
+          (row) =>
+            (row.origin === r.origin && row.destination === r.destination) ||
+            (row.origin === r.destination && row.destination === r.origin)
+        );
+        const avgRouteIndex =
+          matchingRows.length > 0
+            ? matchingRows.reduce((acc, row) => acc + row.indexValue, 0) / matchingRows.length
+            : 100.0;
+        calcPrev += r.weight * avgRouteIndex;
+      }
+      prevIndex = calcPrev;
     }
 
     const pctChange24h = prevIndex > 0 ? ((currentIndex - prevIndex) / prevIndex) * 100 : 0;
-    const status = Math.abs(pctChange24h) > 15 ? 'HIGH_SPIKE' : Math.abs(pctChange24h) > 5 ? 'VOLATILE' : 'STABLE';
+    const status =
+      Math.abs(pctChange24h) > 15
+        ? 'HIGH_SPIKE'
+        : Math.abs(pctChange24h) > 5
+        ? 'VOLATILE'
+        : 'STABLE';
 
     return NextResponse.json({
       data: {
         currentIndex: Math.round(currentIndex * 100) / 100,
         prevIndex: Math.round(prevIndex * 100) / 100,
         pctChange24h: Math.round(pctChange24h * 100) / 100,
-        intradayMin: Math.round((currentIndex * 0.95) * 100) / 100,
-        intradayMax: Math.round((currentIndex * 1.08) * 100) / 100,
-        lastUpdated: latestComputedAt.toISOString(),
+        lastUpdated: latestObservedAt.toISOString(),
         sampleCount: latestRows.length,
+        runId: latestRecord.runId,
         status
       },
       meta: { generated_at: new Date().toISOString() }
     });
   } catch (error) {
-    console.warn('[API GET /api/v1/index] DB offline or error, returning baseline index dataset.');
-    return NextResponse.json({
-      data: {
-        currentIndex: 104.85,
-        prevIndex: 102.30,
-        pctChange24h: 2.49,
-        intradayMin: 99.60,
-        intradayMax: 113.20,
-        lastUpdated: new Date().toISOString(),
-        sampleCount: 12,
-        status: 'STABLE'
-      },
-      meta: {
-        generated_at: new Date().toISOString(),
-        is_sample_data: true
-      }
-    });
+    console.error('[API GET /api/v1/index ERROR]', error);
+    return NextResponse.json(
+      { error: { code: 'internal_server_error', message: 'Failed to compute APIx index overview' } },
+      { status: 500 }
+    );
   }
 }

@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireApiKey } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireApiKey(req as any, 'read:index');
+  if (auth instanceof NextResponse) return auth;
   try {
     const alerts = await db.alert.findMany({
       orderBy: { createdAt: 'desc' },
@@ -16,31 +19,16 @@ export async function GET() {
         message: a.message,
         createdAt: a.createdAt.toISOString()
       })),
-      meta: { generated_at: new Date().toISOString() }
-    });
-  } catch (error) {
-    console.warn('[API GET /api/v1/alerts] DB offline, returning sample alerts.');
-    return NextResponse.json({
-      data: [
-        {
-          id: 1,
-          type: 'FARE_SPIKE',
-          routeId: 'DEL-BOM',
-          message: 'Sharp fare spike (+27.4%) detected on route DEL-BOM (IndiGo, T+1)',
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 2,
-          type: 'DATA_QUALITY',
-          routeId: 'DEL-BLR',
-          message: 'Normal market variance recorded within 5% band across all carriers',
-          createdAt: new Date().toISOString()
-        }
-      ],
       meta: {
         generated_at: new Date().toISOString(),
-        is_sample_data: true
+        total: alerts.length
       }
     });
+  } catch (error) {
+    console.error('[API GET /api/v1/alerts ERROR]', error);
+    return NextResponse.json(
+      { error: { code: 'internal_server_error', message: 'Failed to fetch alerts' } },
+      { status: 500 }
+    );
   }
 }

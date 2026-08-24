@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { generateApiKey, createAuditLog } from '@/lib/auth';
 import { CreateApiKeySchema } from '@/lib/validation';
+import { requireAdmin } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const keys = await db.apiKey.findMany({
       include: {
@@ -31,32 +34,17 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.warn('[API GET /api/v1/admin/api-keys] DB offline, returning sample API keys.');
-    return NextResponse.json({
-      data: [
-        {
-          id: 'key_sample_rbi',
-          orgId: 'org_rbi_mpd',
-          orgName: 'Reserve Bank of India (Monetary Policy Dept)',
-          orgType: 'rbi',
-          keyMask: 'apix_live_...2026',
-          scope: 'read:index,read:observations,read:routes',
-          rateTier: 'institutional',
-          createdAt: new Date().toISOString(),
-          revokedAt: null,
-          isActive: true
-        }
-      ],
-      meta: {
-        generated_at: new Date().toISOString(),
-        total: 1,
-        is_sample_data: true
-      }
-    });
+    console.error('[API GET /api/v1/admin/api-keys ERROR]', error);
+    return NextResponse.json(
+      { error: { code: 'internal_server_error', message: 'Failed to list API keys' } },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = await req.json();
     const parsed = CreateApiKeySchema.parse(body);
@@ -119,6 +107,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = await req.json();
     const { id, action } = body;
@@ -165,4 +155,3 @@ export async function PATCH(req: NextRequest) {
     );
   }
 }
-

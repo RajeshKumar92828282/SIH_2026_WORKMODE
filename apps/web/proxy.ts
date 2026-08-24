@@ -6,17 +6,17 @@ export function proxy(req: NextRequest) {
 
   if (pathname.startsWith('/api/v1')) {
     const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
-    const rateCheck = checkRateLimit(ip, 120, 60000);
+    const rateCheck = checkRateLimit(ip, 'standard');
 
     if (!rateCheck.allowed) {
       return NextResponse.json(
-        { error: { code: 'rate_limit_exceeded', message: 'Too many requests. Limit: 120 req/min.' } },
+        { error: { code: 'rate_limit_exceeded', message: `Too many requests. Limit: ${rateCheck.limit} req/min.` } },
         { status: 429 }
       );
     }
 
     const response = NextResponse.next();
-    response.headers.set('X-RateLimit-Limit', '120');
+    response.headers.set('X-RateLimit-Limit', rateCheck.limit.toString());
     response.headers.set('X-RateLimit-Remaining', rateCheck.remaining.toString());
     response.headers.set('Access-Control-Allow-Origin', '*');
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');

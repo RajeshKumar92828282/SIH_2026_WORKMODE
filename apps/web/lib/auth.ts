@@ -58,8 +58,12 @@ export async function verifyApiKey(bearerHeader: string | null, requiredScope?: 
     return { valid: false, error: 'API key has been revoked.' };
   }
 
-  if (requiredScope && !apiKeyRecord.scope.includes(requiredScope) && !apiKeyRecord.scope.includes('admin') && !apiKeyRecord.scope.includes('*')) {
-    return { valid: false, error: `API key lacks required scope: ${requiredScope}` };
+  if (requiredScope) {
+    const scopes = apiKeyRecord.scope.split(',').map(s => s.trim());
+    const hasScope = scopes.includes(requiredScope) || scopes.includes('admin') || scopes.includes('*');
+    if (!hasScope) {
+      return { valid: false, error: `API key lacks required scope: ${requiredScope}` };
+    }
   }
 
   return {

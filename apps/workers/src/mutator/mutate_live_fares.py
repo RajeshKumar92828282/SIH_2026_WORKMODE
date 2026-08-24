@@ -9,7 +9,7 @@ def mutate_live_fares():
     db = SessionLocal()
 
     try:
-        print("Starting bulk live fare mutation...", flush=True)
+        print("Starting bulk live fare upsert...", flush=True)
 
         observed_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
@@ -54,6 +54,12 @@ def mutate_live_fares():
                     :observed_at
 
                 FROM static_fares
+                ON CONFLICT (carrier, flight_number, flight_date, origin, destination, flight_time, cabin_class, advance_window)
+                DO UPDATE SET
+                    total_fare = EXCLUDED.total_fare,
+                    base_fare = EXCLUDED.base_fare,
+                    taxes = EXCLUDED.taxes,
+                    observed_at = EXCLUDED.observed_at
             """),
             {
                 "observed_at": observed_at,
@@ -63,8 +69,8 @@ def mutate_live_fares():
         db.commit()
 
         print(
-            f"Bulk mutation completed. "
-            f"Rows inserted: {result.rowcount:,}",
+            f"Bulk upsert completed. "
+            f"Rows affected: {result.rowcount:,}",
             flush=True,
         )
 

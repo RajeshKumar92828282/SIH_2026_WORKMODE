@@ -1,41 +1,51 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireApiKey } from '@/lib/auth-middleware';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireApiKey(req as any, 'read:index');
+  if (auth instanceof NextResponse) return auth;
+
   try {
-    const carriers = await db.carrier.findMany();
-    const latestTickRecord = await db.indexResult.findFirst({
-      orderBy: { computedAt: 'desc' }
+    const carriers = await db.carrier.findMany({
+      orderBy: { name: 'asc' }
     });
 
     const carrierStats = await Promise.all(
       carriers.map(async (c) => {
-        let avgFare = 0;
-        let avgDiff = 0;
-        let avgPctChange = 0;
+        // Match carrier by exact name or code
+        const liveAgg = await db.liveFare.aggregate({
+          where: {
+            OR: [
+              { carrier: c.name },
+              { carrier: c.code }
+            ]
+          },
+          _avg: { totalFare: true }
+        });
 
-        if (latestTickRecord) {
-          const rows = await db.indexResult.findMany({
-            where: {
-              computedAt: latestTickRecord.computedAt,
-              carrierId: c.id
-            }
-          });
+        const staticAgg = await db.staticFare.aggregate({
+          where: {
+            OR: [
+              { carrier: c.name },
+              { carrier: c.code }
+            ]
+          },
+          _avg: { totalFare: true }
+        });
 
-          if (rows.length > 0) {
-            avgFare = rows.reduce((acc, r) => acc + Number(r.liveTotalFare), 0) / rows.length;
-            avgDiff = rows.reduce((acc, r) => acc + Number(r.fareDiff), 0) / rows.length;
-            avgPctChange = rows.reduce((acc, r) => acc + r.pctChange, 0) / rows.length;
-          }
-        }
+        const avgLive = liveAgg._avg.totalFare || 0;
+        const avgStatic = staticAgg._avg.totalFare || avgLive;
+        const diff = avgLive - avgStatic;
+        const pctChange = avgStatic > 0 ? (diff / avgStatic) * 100 : 0;
 
         return {
           id: c.id,
           name: c.name,
           code: c.code,
-          avgLiveFare: Math.round(avgFare),
-          avgFareDiff: Math.round(avgDiff),
-          avgPctChange: Math.round(avgPctChange * 100) / 100
+          avgLiveFare: Math.round(avgLive),
+          avgFareDiff: Math.round(diff),
+          avgPctChange: Math.round(pctChange * 100) / 100
         };
       })
     );
@@ -45,30 +55,10 @@ export async function GET() {
       meta: { generated_at: new Date().toISOString() }
     });
   } catch (error) {
-    console.warn('[API GET /api/v1/airlines] DB offline or error, returning baseline airline dataset.');
-    return NextResponse.json({
-      data: [
-        {
-          id: 'IGO',
-          name: 'IndiGo',
-          code: '6E',
-          avgLiveFare: 5750,
-          avgFareDiff: 210,
-          avgPctChange: 3.79
-        },
-        {
-          id: 'SEJ',
-          name: 'SpiceJet',
-          code: 'SG',
-          avgLiveFare: 5520,
-          avgFareDiff: 140,
-          avgPctChange: 2.60
-        }
-      ],
-      meta: {
-        generated_at: new Date().toISOString(),
-        is_sample_data: true
-      }
-    });
+    console.error('[API GET /api/v1/airlines ERROR]', error);
+    return NextResponse.json(
+      { error: { code: 'internal_server_error', message: 'Failed to fetch airline comparison data' } },
+      { status: 500 }
+    );
   }
 }
