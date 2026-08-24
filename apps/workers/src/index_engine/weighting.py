@@ -50,7 +50,6 @@ def calculate_weighted_index():
                         destination,
                         flight_time,
                         cabin_class,
-                        advance_window,
                         AVG(total_fare) AS static_fare
                     FROM static_fares
                     GROUP BY
@@ -60,8 +59,7 @@ def calculate_weighted_index():
                         origin,
                         destination,
                         flight_time,
-                        cabin_class,
-                        advance_window
+                        cabin_class
                 ),
 
                 live_grouped AS (
@@ -73,7 +71,6 @@ def calculate_weighted_index():
                         lf.destination,
                         lf.flight_time,
                         lf.cabin_class,
-                        lf.advance_window,
                         AVG(lf.total_fare) AS live_fare
                     FROM live_fares lf
                     INNER JOIN latest_snapshot ls
@@ -85,15 +82,13 @@ def calculate_weighted_index():
                         lf.origin,
                         lf.destination,
                         lf.flight_time,
-                        lf.cabin_class,
-                        lf.advance_window
+                        lf.cabin_class
                 ),
 
                 route_changes AS (
                     SELECT
                         s.origin,
                         s.destination,
-                        s.advance_window,
                         s.cabin_class,
                         COUNT(*) AS observations,
 
@@ -117,12 +112,10 @@ def calculate_weighted_index():
                         AND s.destination = l.destination
                         AND s.flight_time = l.flight_time
                         AND s.cabin_class = l.cabin_class
-                        AND s.advance_window = l.advance_window
 
                     GROUP BY
                         s.origin,
                         s.destination,
-                        s.advance_window,
                         s.cabin_class
                 ),
 
@@ -135,7 +128,6 @@ def calculate_weighted_index():
                 SELECT
                     r.origin,
                     r.destination,
-                    r.advance_window,
                     r.cabin_class,
                     r.observations,
 
@@ -161,7 +153,6 @@ def calculate_weighted_index():
                 ORDER BY
                     r.origin,
                     r.destination,
-                    r.advance_window,
                     r.cabin_class
             """)
         )
@@ -191,7 +182,6 @@ def calculate_weighted_index():
         for row in rows:
             print(
                 f"{row.origin} -> {row.destination} | "
-                f"Window: {row.advance_window or 'N/A'} | "
                 f"Class: {row.cabin_class} | "
                 f"Weight: {float(row.weight) * 100:.2f}% | "
                 f"Change: {float(row.price_change_percent):.4f}%"
@@ -201,7 +191,7 @@ def calculate_weighted_index():
                 IndexResult(
                     origin=row.origin,
                     destination=row.destination,
-                    advance_window=row.advance_window,
+                    advance_window=None,
                     cabin_class=row.cabin_class,
                     index_value=float(
                         100 * (
@@ -212,6 +202,19 @@ def calculate_weighted_index():
                     run_id=run_id,
                 )
             )
+
+        # Save the overall weighted index as a summary row
+        db.add(
+            IndexResult(
+                origin="ALL",
+                destination="ALL",
+                advance_window=None,
+                cabin_class="ALL",
+                index_value=float(index_value),
+                observed_at=observed_at,
+                run_id=run_id,
+            )
+        )
 
         db.commit()
 

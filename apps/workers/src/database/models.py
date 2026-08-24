@@ -1,18 +1,26 @@
 from datetime import date, datetime, timezone
 import uuid
 
-from sqlalchemy import Date, DateTime, Float, Integer, String
+from sqlalchemy import Date, DateTime, Float, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.connection import Base
 
 
-def utc_now() -> datetime:
-    return datetime.now(timezone.utc).replace(tzinfo=None)
-
-
 class StaticFare(Base):
     __tablename__ = "static_fares"
+    __table_args__ = (
+        Index(
+            "ix_static_fares_join_keys",
+            "origin",
+            "destination",
+            "cabin_class",
+            "carrier",
+            "flight_number",
+            "flight_date",
+            "flight_time",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -83,13 +91,26 @@ class StaticFare(Base):
     # When this observation entered our system
     observed_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=utc_now,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         nullable=False,
     )
 
 
 class LiveFare(Base):
     __tablename__ = "live_fares"
+    __table_args__ = (
+        Index(
+            "ix_live_fares_join_keys",
+            "origin",
+            "destination",
+            "cabin_class",
+            "carrier",
+            "flight_number",
+            "flight_date",
+            "flight_time",
+        ),
+        Index("ix_live_fares_observed_at", "observed_at"),
+    )
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -156,7 +177,7 @@ class LiveFare(Base):
 
     observed_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=utc_now,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         nullable=False,
     )
 
@@ -197,7 +218,7 @@ class IndexResult(Base):
 
     observed_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=utc_now,
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         nullable=False,
     )
 

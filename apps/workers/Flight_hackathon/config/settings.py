@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 # Paths
-PROJECT_ROOT = Path("D:/Flight_hackathon").resolve()
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
 HISTORICAL_DATA_DIR = PROJECT_ROOT / "data" / "historical"
 PROCESSED_DATA_DIR = PROJECT_ROOT / "data" / "processed"

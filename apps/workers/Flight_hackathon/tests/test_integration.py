@@ -56,7 +56,7 @@ def test_e2e_database_and_index_flow():
     
     try:
         # 1. Run dynamic price mutation
-        mutate_live_fares()
+        test_observed_at = mutate_live_fares()
         
         # 2. Run weighted route index calculation
         index_val = calculate_weighted_index()
@@ -73,15 +73,27 @@ def test_e2e_database_and_index_flow():
         
     finally:
         # 4. Clean up: Delete only the records created by this test run
-        # Delete live fares and index results created after test_start_time
         print("\nCleaning up integration test database records...")
-        db.execute(
-            text("DELETE FROM live_fares WHERE observed_at >= :t"),
-            {"t": test_start_time}
-        )
-        db.execute(
-            text("DELETE FROM index_results WHERE observed_at >= :t"),
-            {"t": test_start_time}
-        )
-        db.commit()
-        db.close()
+        try:
+            if 'test_observed_at' in locals() and test_observed_at:
+                db.execute(
+                    text("DELETE FROM live_fares WHERE observed_at = :t"),
+                    {"t": test_observed_at}
+                )
+            
+            # Fetch specific run_ids created during this integration test run
+            run_ids = db.execute(
+                text("SELECT DISTINCT run_id FROM index_results WHERE observed_at >= :t"),
+                {"t": test_start_time}
+            ).fetchall()
+            for r in run_ids:
+                db.execute(
+                    text("DELETE FROM index_results WHERE run_id = :run_id"),
+                    {"run_id": r[0]}
+                )
+            db.commit()
+        except Exception as cleanup_err:
+            print(f"Error cleaning up test database records: {cleanup_err}")
+            db.rollback()
+        finally:
+            db.close()

@@ -77,25 +77,20 @@ def process_advance_booking(df: pd.DataFrame) -> pd.DataFrame:
         df["advance_window"] = None
         
     # Cast existing advance_days to numeric
-    if not df["advance_days"].isna().all():
-        df["advance_days"] = pd.to_numeric(df["advance_days"], errors="coerce")
+    df["advance_days"] = pd.to_numeric(df["advance_days"], errors="coerce")
+    
+    # Calculate advance_days where both dates are present
+    if "observation_date" in df.columns and "journey_date" in df.columns:
+        obs_col = pd.to_datetime(df["observation_date"], errors="coerce")
+        jrny_col = pd.to_datetime(df["journey_date"], errors="coerce")
         
-    for idx, row in df.iterrows():
-        obs_d = row.get("observation_date")
-        jrny_d = row.get("journey_date")
-        adv_d = row.get("advance_days")
-        adv_w = row.get("advance_window")
-        
-        # Scenario A: We can calculate advance_days from observation and journey dates
-        if pd.notna(obs_d) and pd.notna(jrny_d):
-            calculated_days = calculate_advance_days(obs_d, jrny_d)
-            if calculated_days is not None:
-                df.at[idx, "advance_days"] = calculated_days
-                df.at[idx, "advance_window"] = assign_advance_window_bucket(calculated_days)
-                continue
-                
-        # Scenario B: observation/journey date is missing, but advance_days is already present
-        if pd.notna(adv_d):
-            df.at[idx, "advance_window"] = assign_advance_window_bucket(adv_d)
+        both_valid = obs_col.notna() & jrny_col.notna()
+        if both_valid.any():
+            df.loc[both_valid, "advance_days"] = (jrny_col[both_valid] - obs_col[both_valid]).dt.days
+            
+    # Assign advance_window buckets using vectorized map/apply
+    df["advance_window"] = df["advance_days"].apply(assign_advance_window_bucket)
+    # Replace NaN/NAType with None to preserve strict 'is None' types
+    df["advance_window"] = df["advance_window"].astype(object).where(df["advance_window"].notna(), None)
             
     return df
