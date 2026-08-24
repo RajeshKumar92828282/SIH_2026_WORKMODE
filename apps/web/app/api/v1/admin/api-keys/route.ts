@@ -31,28 +31,11 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.warn('[API GET /api/v1/admin/api-keys] DB offline, returning sample API keys.');
-    return NextResponse.json({
-      data: [
-        {
-          id: 'key_sample_rbi',
-          orgId: 'org_rbi_mpd',
-          orgName: 'Reserve Bank of India (Monetary Policy Dept)',
-          orgType: 'rbi',
-          keyMask: 'apix_live_...2026',
-          scope: 'read:index,read:observations,read:routes',
-          rateTier: 'institutional',
-          createdAt: new Date().toISOString(),
-          revokedAt: null,
-          isActive: true
-        }
-      ],
-      meta: {
-        generated_at: new Date().toISOString(),
-        total: 1,
-        is_sample_data: true
-      }
-    });
+    console.error('[API GET /api/v1/admin/api-keys ERROR]', error);
+    return NextResponse.json(
+      { error: { code: 'internal_server_error', message: 'Failed to list API keys' } },
+      { status: 500 }
+    );
   }
 }
 
@@ -165,4 +148,3 @@ export async function PATCH(req: NextRequest) {
     );
   }
 }
-

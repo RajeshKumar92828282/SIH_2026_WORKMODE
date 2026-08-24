@@ -8,17 +8,29 @@ export async function GET(req: NextRequest) {
     const query = ObservationsQuerySchema.parse(Object.fromEntries(searchParams));
 
     const where: any = {};
-    if (query.route) where.routeId = query.route;
-    if (query.carrier) where.carrierId = query.carrier;
-    if (query.leadTime) where.leadTimeWindow = query.leadTime;
+    if (query.route) {
+      const parts = query.route.split('-');
+      if (parts.length === 2) {
+        where.OR = [
+          { origin: parts[0], destination: parts[1] },
+          { origin: parts[0] === 'DEL' ? 'Delhi' : parts[0] === 'BOM' ? 'Mumbai' : 'Bangalore', destination: parts[1] === 'BOM' ? 'Mumbai' : parts[1] === 'BLR' ? 'Bangalore' : 'Delhi' }
+        ];
+      }
+    }
+    if (query.carrier) {
+      where.carrier = { contains: query.carrier, mode: 'insensitive' };
+    }
+    if (query.leadTime) {
+      where.advanceWindow = query.leadTime;
+    }
 
     const skip = (query.page - 1) * query.limit;
 
     const [total, observations] = await Promise.all([
-      db.indexResult.count({ where }),
-      db.indexResult.findMany({
+      db.liveFare.count({ where }),
+      db.liveFare.findMany({
         where,
-        orderBy: { computedAt: 'desc' },
+        orderBy: { observedAt: 'desc' },
         skip,
         take: query.limit
       })
@@ -27,17 +39,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       data: observations.map((o) => ({
         id: o.id,
-        computedAt: o.computedAt.toISOString(),
-        routeId: o.routeId,
-        carrierId: o.carrierId,
-        leadTimeWindow: o.leadTimeWindow,
-        staticTotalFare: Number(o.staticTotalFare),
-        liveTotalFare: Number(o.liveTotalFare),
-        fareDiff: Number(o.fareDiff),
-        pctChange: Math.round(o.pctChange * 100) / 100,
-        relativePrice: Math.round(o.relativePrice * 100) / 100,
-        routeWeight: o.routeWeight,
-        indexContribution: Math.round(o.indexContribution * 100) / 100
+        carrier: o.carrier,
+        flightNumber: o.flightNumber,
+        flightDate: o.flightDate.toISOString().split('T')[0],
+        origin: o.origin,
+        destination: o.destination,
+        flightTime: o.flightTime,
+        cabinClass: o.cabinClass,
+        advanceWindow: o.advanceWindow || 'Standard',
+        baseFare: o.baseFare ? Math.round(o.baseFare) : null,
+        taxes: o.taxes ? Math.round(o.taxes) : null,
+        totalFare: Math.round(o.totalFare),
+        observedAt: o.observedAt.toISOString()
       })),
       meta: {
         generated_at: new Date().toISOString(),
@@ -46,60 +59,17 @@ export async function GET(req: NextRequest) {
         limit: query.limit
       }
     });
-  } catch (error) {
-    console.warn('[API GET /api/v1/observations] DB offline or error, returning baseline observations.');
-    return NextResponse.json({
-      data: [
-        {
-          id: 1,
-          computedAt: new Date().toISOString(),
-          routeId: 'DEL-BOM',
-          carrierId: 'IGO',
-          leadTimeWindow: 'T+1',
-          staticTotalFare: 6400,
-          liveTotalFare: 6850,
-          fareDiff: 450,
-          pctChange: 7.03,
-          relativePrice: 107.03,
-          routeWeight: 0.45,
-          indexContribution: 12.04
-        },
-        {
-          id: 2,
-          computedAt: new Date().toISOString(),
-          routeId: 'DEL-BOM',
-          carrierId: 'SEJ',
-          leadTimeWindow: 'T+15',
-          staticTotalFare: 4180,
-          liveTotalFare: 4250,
-          fareDiff: 70,
-          pctChange: 1.67,
-          relativePrice: 101.67,
-          routeWeight: 0.45,
-          indexContribution: 11.44
-        },
-        {
-          id: 3,
-          computedAt: new Date().toISOString(),
-          routeId: 'DEL-BLR',
-          carrierId: 'IGO',
-          leadTimeWindow: 'T+1',
-          staticTotalFare: 7200,
-          liveTotalFare: 7500,
-          fareDiff: 300,
-          pctChange: 4.17,
-          relativePrice: 104.17,
-          routeWeight: 0.35,
-          indexContribution: 9.11
-        }
-      ],
-      meta: {
-        generated_at: new Date().toISOString(),
-        page: 1,
-        total: 3,
-        limit: 50,
-        is_sample_data: true
-      }
-    });
+  } catch (error: any) {
+    console.error('[API GET /api/v1/observations ERROR]', error);
+    if (error.name === 'ZodError') {
+      return NextResponse.json(
+        { error: { code: 'validation_error', message: error.errors[0]?.message || 'Invalid observation query' } },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(
+      { error: { code: 'internal_server_error', message: 'Failed to fetch observations' } },
+      { status: 500 }
+    );
   }
 }

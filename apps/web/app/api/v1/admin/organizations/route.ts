@@ -29,40 +29,11 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.warn('[API GET /api/v1/admin/organizations] DB offline, returning baseline institutions.');
-    return NextResponse.json({
-      data: [
-        {
-          id: 'org_rbi_mpd',
-          name: 'Reserve Bank of India (Monetary Policy Dept)',
-          type: 'rbi',
-          contactEmail: 'mpd@rbi.org.in',
-          activeKeysCount: 1,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'org_nso_cpi',
-          name: 'National Statistical Office (Price Statistics Division)',
-          type: 'nso',
-          contactEmail: 'cpi-division@mospi.gov.in',
-          activeKeysCount: 1,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'org_dgca_stats',
-          name: 'Directorate General of Civil Aviation (DGCA)',
-          type: 'govt_agency',
-          contactEmail: 'stats@dgca.gov.in',
-          activeKeysCount: 0,
-          createdAt: new Date().toISOString()
-        }
-      ],
-      meta: {
-        generated_at: new Date().toISOString(),
-        total: 3,
-        is_sample_data: true
-      }
-    });
+    console.error('[API GET /api/v1/admin/organizations ERROR]', error);
+    return NextResponse.json(
+      { error: { code: 'internal_server_error', message: 'Failed to retrieve organizations' } },
+      { status: 500 }
+    );
   }
 }
 

@@ -7,37 +7,65 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const query = IndexHistoryQuerySchema.parse(Object.fromEntries(searchParams));
 
-    // Group index_results by computedAt
-    const distinctTicks = await db.indexResult.findMany({
-      select: { computedAt: true },
-      distinct: ['computedAt'],
-      orderBy: { computedAt: 'asc' },
+    // 1. Fetch basket routes
+    const routes = await db.route.findMany({
+      orderBy: { weight: 'desc' }
+    });
+
+    // 2. Fetch distinct run timestamps from index_results (DB3)
+    const distinctRuns = await db.indexResult.findMany({
+      select: { observedAt: true, runId: true },
+      distinct: ['observedAt'],
+      orderBy: { observedAt: 'asc' },
       take: query.limit
     });
 
+    if (distinctRuns.length === 0) {
+      return NextResponse.json({
+        data: [],
+        meta: {
+          generated_at: new Date().toISOString(),
+          total: 0
+        }
+      });
+    }
+
     const historyPoints = [];
 
-    for (const tick of distinctTicks) {
+    for (const run of distinctRuns) {
       const rows = await db.indexResult.findMany({
-        where: { computedAt: tick.computedAt }
+        where: { observedAt: run.observedAt }
       });
 
-      const totalIndex = rows.reduce((acc, r) => acc + Number(r.indexContribution), 0);
+      let totalIndex = 0;
+      let delBomContrib = 0;
+      let delBlrContrib = 0;
+      let bomBlrContrib = 0;
 
-      const delBomContrib = rows
-        .filter((r) => r.routeId === 'DEL-BOM')
-        .reduce((acc, r) => acc + Number(r.indexContribution), 0);
+      for (const r of routes) {
+        const matchingRows = rows.filter(
+          (row) =>
+            (row.origin === r.origin && row.destination === r.destination) ||
+            (row.origin === r.destination && row.destination === r.origin) ||
+            (r.id.includes(row.origin) && r.id.includes(row.destination))
+        );
 
-      const delBlrContrib = rows
-        .filter((r) => r.routeId === 'DEL-BLR')
-        .reduce((acc, r) => acc + Number(r.indexContribution), 0);
+        const avgRouteIndex =
+          matchingRows.length > 0
+            ? matchingRows.reduce((acc, row) => acc + row.indexValue, 0) / matchingRows.length
+            : 100.0;
 
-      const bomBlrContrib = rows
-        .filter((r) => r.routeId === 'BOM-BLR')
-        .reduce((acc, r) => acc + Number(r.indexContribution), 0);
+        const contrib = r.weight * avgRouteIndex;
+        totalIndex += contrib;
+
+        if (r.id === 'DEL-BOM') delBomContrib = contrib;
+        if (r.id === 'DEL-BLR') delBlrContrib = contrib;
+        if (r.id === 'BOM-BLR') bomBlrContrib = contrib;
+      }
 
       historyPoints.push({
-        timestamp: tick.computedAt.toISOString(),
+        timestamp: run.observedAt.toISOString(),
+        runId: run.runId,
         indexValue: Math.round(totalIndex * 100) / 100,
         delBomContribution: Math.round(delBomContrib * 100) / 100,
         delBlrContribution: Math.round(delBlrContrib * 100) / 100,
@@ -52,28 +80,17 @@ export async function GET(req: NextRequest) {
         total: historyPoints.length
       }
     });
-  } catch (error) {
-    console.warn('[API GET /api/v1/index/history] DB offline or error, returning baseline history time-series.');
-    const now = Date.now();
-    const sampleHistory = Array.from({ length: 15 }).map((_, i) => {
-      const ts = new Date(now - (14 - i) * 60000).toISOString();
-      const base = 100 + Math.sin(i / 2) * 4 + i * 0.3;
-      return {
-        timestamp: ts,
-        indexValue: Math.round(base * 100) / 100,
-        delBomContribution: Math.round((base * 0.45) * 100) / 100,
-        delBlrContribution: Math.round((base * 0.35) * 100) / 100,
-        bomBlrContribution: Math.round((base * 0.20) * 100) / 100
-      };
-    });
-
-    return NextResponse.json({
-      data: sampleHistory,
-      meta: {
-        generated_at: new Date().toISOString(),
-        total: sampleHistory.length,
-        is_sample_data: true
-      }
-    });
+  } catch (error: any) {
+    console.error('[API GET /api/v1/index/history ERROR]', error);
+    if (error.name === 'ZodError') {
+      return NextResponse.json(
+        { error: { code: 'validation_error', message: error.errors[0]?.message || 'Invalid query parameters' } },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(
+      { error: { code: 'internal_server_error', message: 'Failed to fetch index history time series' } },
+      { status: 500 }
+    );
   }
 }

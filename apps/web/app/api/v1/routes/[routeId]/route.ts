@@ -19,8 +19,13 @@ export async function GET(
     }
 
     const history = await db.indexResult.findMany({
-      where: { routeId },
-      orderBy: { computedAt: 'asc' },
+      where: {
+        OR: [
+          { origin: route.origin, destination: route.destination },
+          { origin: route.destination, destination: route.origin }
+        ]
+      },
+      orderBy: { observedAt: 'asc' },
       take: 200
     });
 
@@ -28,7 +33,15 @@ export async function GET(
       data: {
         route,
         observationsCount: history.length,
-        history
+        history: history.map((h) => ({
+          id: h.id,
+          origin: h.origin,
+          destination: h.destination,
+          indexValue: Math.round(h.indexValue * 100) / 100,
+          cabinClass: h.cabinClass,
+          observedAt: h.observedAt.toISOString(),
+          runId: h.runId
+        }))
       },
       meta: { generated_at: new Date().toISOString() }
     });

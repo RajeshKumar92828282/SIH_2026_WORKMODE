@@ -41,31 +41,9 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
-    console.warn('[API GET /api/v1/admin/audit-logs] DB offline, returning sample audit trail.');
-    return NextResponse.json({
-      data: [
-        {
-          id: 1,
-          actor: 'SYSTEM_SEED',
-          action: 'INITIAL_PROVISION',
-          target: 'Admin & Organizations',
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 2,
-          actor: 'admin@apix.gov.in',
-          action: 'ISSUE_API_KEY',
-          target: 'Reserve Bank of India (apix_live_...2026)',
-          createdAt: new Date().toISOString()
-        }
-      ],
-      meta: {
-        generated_at: new Date().toISOString(),
-        page: 1,
-        total: 2,
-        limit: 50,
-        is_sample_data: true
-      }
-    });
+    return NextResponse.json(
+      { error: { code: 'internal_server_error', message: 'Failed to retrieve audit logs' } },
+      { status: 500 }
+    );
   }
 }
