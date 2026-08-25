@@ -24,9 +24,7 @@ def clean_missing_value(val: Any) -> Any:
         return None
         
     # Check for pandas/numpy null types
-    if isinstance(val, (float, int)) and (math.isnan(val) or np.isnan(val)):
-        return None
-    if isinstance(val, pd._libs.missing.NAType) or val is pd.NaT:
+    if pd.isna(val):
         return None
         
     if isinstance(val, str):

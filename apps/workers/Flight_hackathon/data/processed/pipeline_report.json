@@ -1,6 +1,6 @@
 {
-  "pipeline_run_timestamp": "2026-08-23T16:54:19.354519Z",
-  "duration_seconds": 27.859453,
+  "pipeline_run_timestamp": "2026-08-24T15:53:12.607688Z",
+  "duration_seconds": 18.705719,
   "datasets_processed": 1,
   "total_rows_loaded": 300153,
   "duplicates_removed": 75146,

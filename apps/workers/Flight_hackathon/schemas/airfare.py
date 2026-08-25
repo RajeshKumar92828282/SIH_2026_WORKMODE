@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -38,14 +38,16 @@ class AirfareObservation(BaseModel):
     taxes: Optional[float] = Field(None, ge=0)
     fees: Optional[float] = Field(None, ge=0)
     total_fare: Optional[float] = Field(None, ge=0)
-    price: float = Field(..., ge=0)  # Price is required and must be non-negative
+    price: float = Field(..., gt=0)  # Price is required and must be positive
     
     is_outlier: bool = False
     quality_status: str = "VALID"
     quality_notes: Optional[str] = None
     
     source_row_number: int = Field(..., ge=1)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
 
     @field_validator("origin", "destination", mode="before")
     @classmethod

@@ -47,6 +47,10 @@ def discover_datasets() -> List[Path]:
     # Ensure uniqueness of paths
     unique_paths = list(set(csv_files))
     
+    # Filter out output files to avoid re-ingestion loop
+    ignored_filenames = {"cleaned_observations.csv", "rejected_records.csv"}
+    unique_paths = [p for p in unique_paths if p.name not in ignored_filenames]
+    
     # Sort files by name/path to maintain deterministic processing order
     unique_paths.sort(key=lambda p: p.name)
     logger.info("Discovered %d CSV datasets: %s", len(unique_paths), [f.name for f in unique_paths])
