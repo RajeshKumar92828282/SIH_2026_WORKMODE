@@ -4,14 +4,13 @@ const client = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE || '',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': 'Bearer apix_live_sec_89df2019a84b0e'
-  }
+  },
+  withCredentials: true, // Important: send cookies with requests
 });
 
 export const apiClient = {
-  async getIndexSummary(apiKey?: string) {
-    const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
-    const res = await client.get('/api/v1/index', { headers });
+  async getIndexSummary() {
+    const res = await client.get('/api/v1/index');
     return res.data;
   },
 
@@ -66,6 +65,26 @@ export const apiClient = {
 
   async createApiKey(orgId: string, scope = 'read:index', rateTier = 'standard') {
     const res = await client.post('/api/v1/admin/api-keys', { orgId, scope, rateTier });
+    return res.data;
+  },
+
+  async login(email: string, password: string) {
+    const res = await client.post('/api/v1/auth/login', { email, password });
+    return res.data;
+  },
+
+  async register(email: string, password: string) {
+    const res = await client.post('/api/v1/auth/register', { email, password });
+    return res.data;
+  },
+
+  async logout() {
+    const res = await client.post('/api/v1/auth/logout');
+    return res.data;
+  },
+
+  async getMe() {
+    const res = await client.get('/api/v1/auth/me');
     return res.data;
   }
 };
