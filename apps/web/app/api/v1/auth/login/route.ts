@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
     if (!user) {
       await createAuditLog(email, 'LOGIN_FAILED', 'User not found');
       return NextResponse.json(
-        { error: { code: 'unauthorized', message: 'Invalid email or password' } },
-        { status: 401 }
+        { error: { code: 'user_not_found', message: 'No account found with this email' } },
+        { status: 404 }
       );
     }
 
@@ -84,9 +84,14 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error('[API POST /api/v1/auth/login ERROR]', error);
+    console.error('[API POST /api/v1/auth/login ERROR]', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      name: error.name
+    });
     return NextResponse.json(
-      { error: { code: 'internal_server_error', message: 'Failed to process login' } },
+      { error: { code: 'internal_server_error', message: error.message || 'Failed to process login' } },
       { status: 500 }
     );
   }

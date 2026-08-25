@@ -3,9 +3,8 @@ import { create } from "zustand";
 export interface UserSession {
   name: string;
   email: string;
-  role: "admin" | "institutional_consumer" | "analyst";
+  role: "admin" | "analyst";
   organization: string;
-  apiKey: string;
 }
 
 interface AppState {
@@ -32,48 +31,67 @@ interface AppState {
   // Authentication
   isAuthenticated: boolean;
   session: UserSession | null;
-  login: (user: UserSession) => void;
-  logout: () => void;
+  checkAuth: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-export const useAppStore = create<AppState>((set) => {
-  // Read initial auth state from localStorage if in browser
-  const storedUser = typeof window !== "undefined" ? localStorage.getItem("apix_user_session") : null;
-  const initialSession = storedUser ? JSON.parse(storedUser) : null;
+export const useAppStore = create<AppState>((set) => ({
+  isSidebarCollapsed: false,
+  toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+  show3DHero: true,
+  toggle3DHero: () => set((state) => ({ show3DHero: !state.show3DHero })),
 
-  return {
-    isSidebarCollapsed: false,
-    toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
-    show3DHero: true,
-    toggle3DHero: () => set((state) => ({ show3DHero: !state.show3DHero })),
+  selectedTimeframe: "30D",
+  setTimeframe: (selectedTimeframe) => set({ selectedTimeframe }),
+  selectedRouteId: "ALL",
+  setSelectedRouteId: (selectedRouteId) => set({ selectedRouteId }),
+  selectedLeadTime: "ALL",
+  setSelectedLeadTime: (selectedLeadTime) => set({ selectedLeadTime }),
+  showDgcaBenchmark: true,
+  toggleDgcaBenchmark: () => set((state) => ({ showDgcaBenchmark: !state.showDgcaBenchmark })),
 
-    selectedTimeframe: "30D",
-    setTimeframe: (selectedTimeframe) => set({ selectedTimeframe }),
-    selectedRouteId: "ALL",
-    setSelectedRouteId: (selectedRouteId) => set({ selectedRouteId }),
-    selectedLeadTime: "ALL",
-    setSelectedLeadTime: (selectedLeadTime) => set({ selectedLeadTime }),
-    showDgcaBenchmark: true,
-    toggleDgcaBenchmark: () => set((state) => ({ showDgcaBenchmark: !state.showDgcaBenchmark })),
+  lastTickerUpdate: new Date().toISOString(),
+  triggerTickerUpdate: () => set({ lastTickerUpdate: new Date().toISOString() }),
 
-    lastTickerUpdate: new Date().toISOString(),
-    triggerTickerUpdate: () => set({ lastTickerUpdate: new Date().toISOString() }),
+  isAuthenticated: false,
+  session: null,
 
-    isAuthenticated: !!initialSession,
-    session: initialSession,
-
-    login: (user: UserSession) => {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("apix_user_session", JSON.stringify(user));
-      }
-      set({ isAuthenticated: true, session: user });
-    },
-
-    logout: () => {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("apix_user_session");
+  checkAuth: async () => {
+    try {
+      const res = await fetch('/api/v1/auth/me', { 
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.data?.user) {
+          set({ 
+            isAuthenticated: true, 
+            session: {
+              name: data.data.user.email.split('@')[0],
+              email: data.data.user.email,
+              role: data.data.user.role,
+              organization: data.data.user.role === 'admin' ? 'Ministry of Statistics & Programme Implementation (MoSPI)' : 'Reserve Bank of India — Monetary Policy Dept'
+            }
+          });
+          return;
+        }
       }
       set({ isAuthenticated: false, session: null });
+    } catch {
+      set({ isAuthenticated: false, session: null });
     }
-  };
-});
+  },
+
+  logout: async () => {
+    try {
+      await fetch('/api/v1/auth/logout', { 
+        method: 'POST', 
+        credentials: 'include' 
+      });
+    } catch {
+      // Ignore errors
+    }
+    set({ isAuthenticated: false, session: null });
+  }
+}));

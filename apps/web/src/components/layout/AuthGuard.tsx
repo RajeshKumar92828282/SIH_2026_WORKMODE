@@ -1,24 +1,31 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated } = useAppStore();
+  const { isAuthenticated, checkAuth } = useAppStore();
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated && pathname !== "/login") {
-      router.push("/login");
-    } else if (isAuthenticated && pathname === "/login") {
-      router.push("/");
-    }
-  }, [isAuthenticated, pathname, router]);
+    checkAuth().then(() => setAuthChecked(true));
+  }, [checkAuth]);
 
-  // If unauthenticated and on a protected route, do not render children
-  if (!isAuthenticated && pathname !== "/login") {
+  useEffect(() => {
+    if (authChecked) {
+      if (!isAuthenticated && pathname !== "/login") {
+        router.push("/login");
+      } else if (isAuthenticated && pathname === "/login") {
+        router.push("/");
+      }
+    }
+  }, [isAuthenticated, pathname, router, authChecked]);
+
+  // If auth not checked yet or unauthenticated and on a protected route, show loading
+  if (!authChecked || (!isAuthenticated && pathname !== "/login")) {
     return (
       <div className="min-h-screen bg-[#003247] flex items-center justify-center font-mono text-xs text-slate-400">
         <div className="flex items-center gap-3 p-4 rounded-xl glass-panel border border-[#143159]">

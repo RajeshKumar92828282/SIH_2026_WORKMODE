@@ -48,7 +48,12 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    console.error('[API POST /api/v1/auth/register ERROR]', error);
+    console.error('[API POST /api/v1/auth/register ERROR]', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      name: error.name
+    });
     if (error.name === 'ZodError') {
       return NextResponse.json(
         { error: { code: 'validation_error', message: error.errors[0]?.message || 'Invalid registration input' } },
@@ -56,7 +61,7 @@ export async function POST(req: NextRequest) {
       );
     }
     return NextResponse.json(
-      { error: { code: 'internal_server_error', message: 'Failed to process user registration' } },
+      { error: { code: 'internal_server_error', message: error.message || 'Failed to process user registration' } },
       { status: 500 }
     );
   }
