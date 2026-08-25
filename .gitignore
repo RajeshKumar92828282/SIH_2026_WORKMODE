@@ -36,6 +36,7 @@ htmlcov/
 
 # Data files (large CSV datasets - keep only processed outputs in git if needed)
 *.csv
+!packages/db/prisma/seed_data.csv
 !data/processed/*.csv
 
 # OS files

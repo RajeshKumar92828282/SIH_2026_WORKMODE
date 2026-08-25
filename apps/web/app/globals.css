@@ -1,66 +1,165 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --background: #003247;
+  --foreground: #ffffff;
+  --surface: #003247;
+  --card: #002b3d;
+  --border: rgba(135, 214, 235, 0.25);
+  --accent: #87D6EB;
 }
 
 body {
-  font-family: var(--font-sans);
-  background-color: #070a12;
-  color: #f3f4f6;
-  min-height: 100vh;
+  background-color: #003247;
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
-/* Glassmorphism Card Utilities */
-.glass-panel {
-  background: rgba(17, 24, 39, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-.glass-panel-glow {
-  background: rgba(17, 24, 39, 0.75);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.15);
-}
-
-/* Glowing text and badge indicators */
-.text-glow-green {
-  text-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
-}
-
-.text-glow-blue {
-  text-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
-}
-
-.text-glow-amber {
-  text-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
-}
-
-/* Custom Scrollbar */
+/* Custom Telemetry Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #002636;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #1f2937;
-  border-radius: 9999px;
+  background: rgba(135, 214, 235, 0.3);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #87D6EB;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+/* Technical Blueprint Data Grids */
+.data-grid-border {
+  border: 1px solid rgba(135, 214, 235, 0.25);
+}
+
+.glass-panel {
+  background: rgba(0, 43, 61, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(135, 214, 235, 0.2);
+}
+
+.glass-card-hover {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-card-hover:hover {
+  background: rgba(0, 58, 82, 0.85);
+  border-color: rgba(135, 214, 235, 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 15px rgba(135, 214, 235, 0.12);
+}
+
+/* Corner + Crosshair Markers */
+.corner-marker-container {
+  position: relative;
+}
+.corner-marker-container::before {
+  content: '+';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  color: #87D6EB;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  opacity: 0.6;
+  line-height: 1;
+}
+.corner-marker-container::after {
+  content: '+';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  color: #87D6EB;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+/* Nav Link Underline Hover */
+.nav-link {
+  position: relative;
+  display: inline-block;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  bottom: -2px;
+  left: 0;
+  background-color: #87D6EB;
+  transform: scaleX(0);
+  transform-origin: bottom right;
+  transition: transform 0.25s ease-out;
+}
+.nav-link:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+/* Telemetry Glow */
+.text-glow-cyan {
+  text-shadow: 0 0 12px rgba(135, 214, 235, 0.6);
+}
+
+.ticker-wrap {
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ticker-scroll {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+  animation: tickerMarquee 25s linear infinite;
+}
+@keyframes tickerMarquee {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+* {
+  cursor: none !important;
+}
+
+#custom-cursor-dot {
+  position: fixed; top: 0; left: 0;
+  width: 6px; height: 6px;
+  background-color: #87D6EB;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px #87D6EB, 0 0 20px rgba(135, 214, 235, 0.6);
+  transition: opacity 0.2s ease;
+}
+
+#custom-cursor-outline {
+  position: fixed; top: 0; left: 0;
+  width: 32px; height: 32px;
+  border: 1.5px solid rgba(135, 214, 235, 0.65);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s ease, height 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 0 14px rgba(135, 214, 235, 0.2);
+}
+
+#custom-cursor-outline.cursor-hover {
+  width: 48px; height: 48px;
+  border-color: #87D6EB;
+  background-color: rgba(135, 214, 235, 0.12);
+  box-shadow: 0 0 22px rgba(135, 214, 235, 0.45);
 }

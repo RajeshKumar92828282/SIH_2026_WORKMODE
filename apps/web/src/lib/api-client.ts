@@ -3,7 +3,8 @@ import axios from 'axios';
 const client = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE || '',
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer apix_live_sec_89df2019a84b0e'
   }
 });
 

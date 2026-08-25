@@ -2,10 +2,11 @@
   "name": "@apix/workers",
   "version": "1.0.0",
   "private": true,
+  "type": "commonjs",
   "scripts": {
-    "start": "ts-node src/index.ts",
-    "load": "ts-node src/loader/load_static_csv.ts",
-    "tick": "ts-node src/tick.ts"
+    "start": "ts-node --transpile-only src/index.ts",
+    "load": "ts-node --transpile-only src/loader/load_static_csv.ts",
+    "tick": "ts-node --transpile-only src/tick.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",
