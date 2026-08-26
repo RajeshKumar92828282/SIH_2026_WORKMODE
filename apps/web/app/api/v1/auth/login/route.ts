@@ -6,9 +6,31 @@ import crypto from 'crypto';
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'apix_super_secret_session_jwt_key_2026';
 const SESSION_COOKIE_NAME = 'apix_session';
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    // Read raw buffer first (bodyParser disabled)
+    const arrayBuffer = await req.arrayBuffer();
+    const rawBody = new TextDecoder().decode(arrayBuffer);
+    console.log('[LOGIN DEBUG] Raw body length:', rawBody.length);
+    console.log('[LOGIN DEBUG] Raw body first 100 chars:', rawBody.substring(0, 100));
+    
+    let body;
+    try {
+      body = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error('[LOGIN DEBUG] JSON parse error:', parseError);
+      return NextResponse.json(
+        { error: { code: 'validation_error', message: 'Invalid JSON in request body', debug: { rawBody: rawBody.substring(0, 100) } } },
+        { status: 400 }
+      );
+    }
+    
     const { email, password } = body;
 
     if (!email || !password) {
