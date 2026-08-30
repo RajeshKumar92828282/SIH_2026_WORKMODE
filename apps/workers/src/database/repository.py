@@ -42,14 +42,11 @@ class FareRepository:
             total_fare=total_fare,
         )
 
-        try:
-            db.add(fare)
-            db.commit()
-            db.refresh(fare)
-            return fare
-        except Exception:
-            db.rollback()
-            raise
+        db.add(fare)
+        db.commit()
+        db.refresh(fare)
+
+        return fare
 
     @staticmethod
     def get_static_fares(db: Session):
@@ -90,14 +87,11 @@ class FareRepository:
             total_fare=total_fare,
         )
 
-        try:
-            db.add(fare)
-            db.commit()
-            db.refresh(fare)
-            return fare
-        except Exception:
-            db.rollback()
-            raise
+        db.add(fare)
+        db.commit()
+        db.refresh(fare)
+
+        return fare
 
     @staticmethod
     def get_live_fares(db: Session):
@@ -105,7 +99,9 @@ class FareRepository:
             select(LiveFare)
         ).all()
 
-
+    # ============================================================
+    # INDEX RESULTS
+    # ============================================================
 
     @staticmethod
     def add_index_result(
@@ -124,14 +120,11 @@ class FareRepository:
             index_value=index_value,
         )
 
-        try:
-            db.add(result)
-            db.commit()
-            db.refresh(result)
-            return result
-        except Exception:
-            db.rollback()
-            raise
+        db.add(result)
+        db.commit()
+        db.refresh(result)
+
+        return result
 
     @staticmethod
     def get_index_results(db: Session):

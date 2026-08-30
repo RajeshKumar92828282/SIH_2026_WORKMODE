@@ -11,13 +11,7 @@ def compare_fares():
 
         result = db.execute(
             text("""
-                WITH latest_snapshot AS (
-                    SELECT
-                        MAX(observed_at) AS observed_at
-                    FROM live_fares
-                ),
-
-                static_grouped AS (
+                WITH static_grouped AS (
                     SELECT
                         carrier,
                         flight_number,
@@ -41,26 +35,24 @@ def compare_fares():
 
                 live_grouped AS (
                     SELECT
-                        lf.carrier,
-                        lf.flight_number,
-                        lf.flight_date,
-                        lf.origin,
-                        lf.destination,
-                        lf.flight_time,
-                        lf.cabin_class,
-                        AVG(lf.total_fare) AS live_fare,
+                        carrier,
+                        flight_number,
+                        flight_date,
+                        origin,
+                        destination,
+                        flight_time,
+                        cabin_class,
+                        AVG(total_fare) AS live_fare,
                         COUNT(*) AS live_observations
-                    FROM live_fares lf
-                    INNER JOIN latest_snapshot ls
-                        ON lf.observed_at = ls.observed_at
+                    FROM live_fares
                     GROUP BY
-                        lf.carrier,
-                        lf.flight_number,
-                        lf.flight_date,
-                        lf.origin,
-                        lf.destination,
-                        lf.flight_time,
-                        lf.cabin_class
+                        carrier,
+                        flight_number,
+                        flight_date,
+                        origin,
+                        destination,
+                        flight_time,
+                        cabin_class
                 )
 
                 SELECT
