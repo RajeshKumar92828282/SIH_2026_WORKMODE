@@ -203,19 +203,6 @@ def calculate_weighted_index():
                 )
             )
 
-        # Save the overall weighted index as a summary row
-        db.add(
-            IndexResult(
-                origin="ALL",
-                destination="ALL",
-                advance_window=None,
-                cabin_class="ALL",
-                index_value=float(index_value),
-                observed_at=observed_at,
-                run_id=run_id,
-            )
-        )
-
         db.commit()
 
         print("-----------------------------------")
