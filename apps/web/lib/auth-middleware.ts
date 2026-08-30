@@ -110,12 +110,13 @@ export async function requireAdmin(req: NextRequest): Promise<AuthContext | Next
   // Fallback to session-based auth
   const sessionUser = verifySession(req);
   console.log('[DEBUG] Session user after verification:', sessionUser);
+  console.log('[DEBUG] Cookie header:', req.headers.get('cookie'));
   if (sessionUser && sessionUser.role === 'admin') {
     return { userRole: 'admin', userId: sessionUser.userId };
   }
   
   return NextResponse.json(
-    { error: { code: 'forbidden', message: 'Admin access required', debug: { sessionUser } } },
+    { error: { code: 'forbidden', message: 'Admin access required', debug: { sessionUser, cookieHeader: req.headers.get('cookie') } } },
     { status: 403 }
   );
 }
