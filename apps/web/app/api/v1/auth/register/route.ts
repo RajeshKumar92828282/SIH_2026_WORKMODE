@@ -3,27 +3,9 @@ import { db } from '@/lib/db';
 import { RegisterUserSchema } from '@/lib/validation';
 import { hashPassword, createAuditLog } from '@/lib/auth';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 export async function POST(req: NextRequest) {
   try {
-    const arrayBuffer = await req.arrayBuffer();
-    const rawBody = new TextDecoder().decode(arrayBuffer);
-    
-    let body;
-    try {
-      body = JSON.parse(rawBody);
-    } catch (parseError) {
-      return NextResponse.json(
-        { error: { code: 'validation_error', message: 'Invalid JSON in request body' } },
-        { status: 400 }
-      );
-    }
-    
+    const body = await req.json();
     const parsed = RegisterUserSchema.parse(body);
 
     // 1. Check if user already exists

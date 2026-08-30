@@ -30,8 +30,18 @@ export async function GET(req: NextRequest) {
 
     const skip = (query.page - 1) * query.limit;
 
+    // Fast count for massive 1.7M dataset if unfiltered, otherwise exact count
+    let totalPromise: Promise<number>;
+    if (Object.keys(where).length === 0) {
+      totalPromise = db.$queryRawUnsafe<any[]>(
+        `SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'live_fares'`
+      ).then((res) => Number(res[0]?.estimate) || 1767513);
+    } else {
+      totalPromise = db.liveFare.count({ where });
+    }
+
     const [total, observations] = await Promise.all([
-      db.liveFare.count({ where }),
+      totalPromise,
       db.liveFare.findMany({
         where,
         orderBy: { observedAt: 'desc' },
