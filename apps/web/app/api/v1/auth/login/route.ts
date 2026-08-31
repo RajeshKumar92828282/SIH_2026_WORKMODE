@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { verifyPassword, createAuditLog } from '@/lib/auth';
+import { createAuditLog } from '@/lib/auth';
 import crypto from 'crypto';
+import { validateStoredCredentials } from '@/lib/backend-store';
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'apix_super_secret_session_jwt_key_2026';
 const SESSION_COOKIE_NAME = 'apix_session';
@@ -40,26 +40,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find user
-    const user = await db.user.findUnique({
-      where: { email: email.toLowerCase() }
-    });
+    const user = await validateStoredCredentials(email, password);
 
     if (!user) {
-      await createAuditLog(email, 'LOGIN_FAILED', 'User not found');
+      await createAuditLog(email, 'LOGIN_FAILED', 'User not found or invalid password');
       return NextResponse.json(
-        { error: { code: 'user_not_found', message: 'No account found with this email' } },
+        { error: { code: 'user_not_found', message: 'No account found with this email or password is invalid' } },
         { status: 404 }
-      );
-    }
-
-    // Verify password
-    const valid = verifyPassword(password, user.passwordHash);
-    if (!valid) {
-      await createAuditLog(user.id, 'LOGIN_FAILED', 'Invalid password');
-      return NextResponse.json(
-        { error: { code: 'unauthorized', message: 'Invalid email or password' } },
-        { status: 401 }
       );
     }
 

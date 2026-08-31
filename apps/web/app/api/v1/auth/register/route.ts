@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
 import { RegisterUserSchema } from '@/lib/validation';
-import { hashPassword, createAuditLog } from '@/lib/auth';
+import { createAuditLog } from '@/lib/auth';
+import { createStoredUser, findStoredUserByEmail } from '@/lib/backend-store';
 
 export const config = {
   api: {
@@ -26,10 +26,7 @@ export async function POST(req: NextRequest) {
     
     const parsed = RegisterUserSchema.parse(body);
 
-    // 1. Check if user already exists
-    const existing = await db.user.findUnique({
-      where: { email: parsed.email.toLowerCase() }
-    });
+    const existing = await findStoredUserByEmail(parsed.email);
 
     if (existing) {
       return NextResponse.json(
@@ -38,17 +35,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Hash password securely
-    const passwordHash = hashPassword(parsed.password);
-
-    // 3. Strict Rule (rules.md): Public registration is always hardcoded to 'analyst'
-    const user = await db.user.create({
-      data: {
-        email: parsed.email.toLowerCase(),
-        passwordHash,
-        role: 'analyst'
-      }
-    });
+    const user = await createStoredUser(parsed.email, parsed.password, 'analyst');
 
     // 4. Record audit entry in audit_logs table
     await createAuditLog(user.id, 'USER_REGISTER', `Analyst account registered: ${user.email}`);
