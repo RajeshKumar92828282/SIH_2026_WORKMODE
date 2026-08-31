@@ -17,12 +17,14 @@ import {
   Compass,
   ChevronLeft,
   ChevronRight,
-  LogOut
+  LogOut,
+  Home
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 
 const navItems = [
-  { href: "/", label: "Index Overview", icon: TrendingUp, badge: "LIVE" },
+  { href: "/", label: "Home Portal", icon: Home, badge: "PUBLIC" },
+  { href: "/dashboard", label: "Index Overview", icon: TrendingUp, badge: "LIVE" },
   { href: "/routes", label: "Route Trends", icon: Plane, badge: "6 Baskets" },
   { href: "/lead-time", label: "Lead-Time Analysis", icon: Clock, badge: "T+1 vs T+15" },
   { href: "/airlines", label: "Airline Comparison", icon: Building2, badge: "5 Carriers" },
@@ -38,6 +40,10 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { isSidebarCollapsed, toggleSidebar, session, logout } = useAppStore();
+
+  if (pathname === "/" || pathname === "/login") {
+    return null;
+  }
 
   const handleLogout = () => {
     logout();

@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     });
 
     const carrierStats = await Promise.all(
-      carriers.map(async (c) => {
+      carriers.map(async (c: any) => {
         // Match carrier by exact name or code
         const liveAgg = await db.liveFare.aggregate({
           where: {

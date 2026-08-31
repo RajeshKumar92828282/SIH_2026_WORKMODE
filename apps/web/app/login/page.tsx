@@ -32,7 +32,7 @@ export default function LoginPage() {
     try {
       await apiClient.login(email, password);
       await checkAuth();
-      router.push("/");
+      router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
       const errCode = err.response?.data?.error?.code;
@@ -71,7 +71,7 @@ export default function LoginPage() {
       // Registration successful, now auto-login
       await apiClient.login(email, password);
       await checkAuth();
-      router.push("/");
+      router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
       setError(err.response?.data?.error?.message || "Registration failed");
@@ -220,6 +220,16 @@ export default function LoginPage() {
               </button>
             </>
           )}
+
+          <div className="pt-2 border-t border-[#143159]/60">
+            <a
+              href="/"
+              className="text-slate-400 hover:text-cyan-300 font-mono text-[11px] inline-flex items-center gap-1.5 transition-colors"
+            >
+              <ArrowLeft className="w-3 h-3 text-cyan-400" />
+              <span>Return to Public Home Landing Page</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>

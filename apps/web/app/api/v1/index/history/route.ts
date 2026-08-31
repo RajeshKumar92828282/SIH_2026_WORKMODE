@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     }
 
     // 4. Single query to fetch all index_results for all runs (fixes N+1)
-    const runTimestamps = distinctRuns.map(r => r.observedAt);
+    const runTimestamps = distinctRuns.map((r: any) => r.observedAt);
     const allRows = await db.indexResult.findMany({
       where: { observedAt: { in: runTimestamps } }
     });
@@ -69,14 +69,14 @@ export async function GET(req: NextRequest) {
 
       for (const r of routes) {
         const matchingRows = rows.filter(
-          (row) =>
+          (row: any) =>
             (row.origin === r.origin && row.destination === r.destination) ||
             (row.origin === r.destination && row.destination === r.origin)
         );
 
         const avgRouteIndex =
           matchingRows.length > 0
-            ? matchingRows.reduce((acc, row) => acc + row.indexValue, 0) / matchingRows.length
+            ? matchingRows.reduce((acc: number, row: any) => acc + row.indexValue, 0) / matchingRows.length
             : 100.0;
 
         const contrib = r.weight * avgRouteIndex;

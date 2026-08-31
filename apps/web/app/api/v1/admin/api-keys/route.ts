@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
-      data: keys.map((k) => ({
+      data: keys.map((k: any) => ({
         id: k.id,
         orgId: k.orgId,
         orgName: k.organization?.name || 'Unknown Organization',

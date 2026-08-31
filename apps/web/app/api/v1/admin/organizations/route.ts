@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
-      data: orgs.map((o) => ({
+      data: orgs.map((o: any) => ({
         id: o.id,
         name: o.name,
         type: o.type,

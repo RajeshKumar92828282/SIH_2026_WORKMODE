@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
-      data: alerts.map((a) => ({
+      data: alerts.map((a: any) => ({
         id: a.id,
         type: a.type,
         routeId: a.routeId,

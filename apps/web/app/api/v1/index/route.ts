@@ -40,14 +40,14 @@ export async function GET(req: Request) {
     let currentIndex = 0;
     for (const r of routes) {
       const matchingRows = latestRows.filter(
-        (row) =>
+        (row: any) =>
           (row.origin === r.origin && row.destination === r.destination) ||
           (row.origin === r.destination && row.destination === r.origin)
       );
 
       const avgRouteIndex =
         matchingRows.length > 0
-          ? matchingRows.reduce((acc, row) => acc + row.indexValue, 0) / matchingRows.length
+          ? matchingRows.reduce((acc: number, row: any) => acc + row.indexValue, 0) / matchingRows.length
           : 100.0;
 
       currentIndex += r.weight * avgRouteIndex;
@@ -68,13 +68,13 @@ export async function GET(req: Request) {
       let calcPrev = 0;
       for (const r of routes) {
         const matchingRows = prevRows.filter(
-          (row) =>
+          (row: any) =>
             (row.origin === r.origin && row.destination === r.destination) ||
             (row.origin === r.destination && row.destination === r.origin)
         );
         const avgRouteIndex =
           matchingRows.length > 0
-            ? matchingRows.reduce((acc, row) => acc + row.indexValue, 0) / matchingRows.length
+            ? matchingRows.reduce((acc: number, row: any) => acc + row.indexValue, 0) / matchingRows.length
             : 100.0;
         calcPrev += r.weight * avgRouteIndex;
       }

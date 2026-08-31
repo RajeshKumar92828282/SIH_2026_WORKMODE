@@ -42,7 +42,7 @@ export async function GET(
       data: {
         route,
         observationsCount: history.length,
-        history: history.map((h) => ({
+        history: history.map((h: any) => ({
           id: h.id,
           origin: h.origin,
           destination: h.destination,

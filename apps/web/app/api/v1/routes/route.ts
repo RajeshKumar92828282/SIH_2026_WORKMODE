@@ -20,17 +20,17 @@ export async function GET(req: Request) {
       : [];
 
     const enrichedRoutes = await Promise.all(
-      routes.map(async (r) => {
+      routes.map(async (r: any) => {
         // 1. Matching index relative price - exact origin/destination matching
         const matchingIndexRows = latestRows.filter(
-          (row) =>
+          (row: any) =>
             (row.origin === r.origin && row.destination === r.destination) ||
             (row.origin === r.destination && row.destination === r.origin)
         );
 
         const avgRelativePrice =
           matchingIndexRows.length > 0
-            ? matchingIndexRows.reduce((acc, row) => acc + row.indexValue, 0) / matchingIndexRows.length
+            ? matchingIndexRows.reduce((acc: number, row: any) => acc + row.indexValue, 0) / matchingIndexRows.length
             : 100.0;
 
         // 2. Average live fare from live_fares (DB2)

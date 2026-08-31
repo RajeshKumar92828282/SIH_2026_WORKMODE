@@ -48,14 +48,14 @@ export async function GET(req: Request) {
       stateMap.get(destState.code)!.origins.push(route.destination);
     }
 
-    const stateHeatmap = Array.from(stateMap.values()).map((h) => {
+    const stateHeatmap = Array.from(stateMap.values()).map((h: any) => {
       const matchingRows = latestRows.filter(
-        (row) => h.origins.includes(row.origin) || h.origins.includes(row.destination)
+        (row: any) => h.origins.includes(row.origin) || h.origins.includes(row.destination)
       );
 
       const avgIndex =
         matchingRows.length > 0
-          ? matchingRows.reduce((acc, r) => acc + r.indexValue, 0) / matchingRows.length
+          ? matchingRows.reduce((acc: number, r: any) => acc + r.indexValue, 0) / matchingRows.length
           : 100.0;
 
       const rounded = Math.round(avgIndex * 100) / 100;

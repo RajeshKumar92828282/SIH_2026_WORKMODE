@@ -2,7 +2,10 @@ from datetime import datetime, timezone
 
 from sqlalchemy import text
 
-from database.connection import SessionLocal
+try:
+    from database.connection import SessionLocal
+except ModuleNotFoundError:
+    from src.database.connection import SessionLocal
 
 
 def mutate_live_fares():

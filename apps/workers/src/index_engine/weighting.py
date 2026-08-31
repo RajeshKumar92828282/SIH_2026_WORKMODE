@@ -3,8 +3,12 @@ from datetime import datetime, timezone
 
 from sqlalchemy import text
 
-from database.connection import SessionLocal
-from database.models import IndexResult
+try:
+    from database.connection import SessionLocal
+    from database.models import IndexResult
+except ModuleNotFoundError:
+    from src.database.connection import SessionLocal
+    from src.database.models import IndexResult
 
 
 def calculate_weighted_index():

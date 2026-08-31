@@ -14,18 +14,20 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     checkAuth().then(() => setAuthChecked(true));
   }, [checkAuth]);
 
+  const isPublicRoute = pathname === "/" || pathname === "/login";
+
   useEffect(() => {
     if (authChecked) {
-      if (!isAuthenticated && pathname !== "/login") {
+      if (!isAuthenticated && !isPublicRoute) {
         router.push("/login");
       } else if (isAuthenticated && pathname === "/login") {
-        router.push("/");
+        router.push("/dashboard");
       }
     }
-  }, [isAuthenticated, pathname, router, authChecked]);
+  }, [isAuthenticated, pathname, router, authChecked, isPublicRoute]);
 
   // If auth not checked yet or unauthenticated and on a protected route, show loading
-  if (!authChecked || (!isAuthenticated && pathname !== "/login")) {
+  if (!authChecked || (!isAuthenticated && !isPublicRoute)) {
     return (
       <div className="min-h-screen bg-[#003247] flex items-center justify-center font-mono text-xs text-slate-400">
         <div className="flex items-center gap-3 p-4 rounded-xl glass-panel border border-[#143159]">

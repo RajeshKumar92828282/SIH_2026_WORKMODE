@@ -62,7 +62,7 @@ export async function verifyApiKey(bearerHeader: string | null, requiredScope?: 
       }
 
       if (requiredScope) {
-        const scopes = apiKeyRecord.scope.split(',').map(s => s.trim());
+        const scopes = apiKeyRecord.scope.split(',').map((s: string) => s.trim());
         const hasScope = scopes.includes(requiredScope) || scopes.includes('admin') || scopes.includes('*');
         if (!hasScope) {
           return { valid: false, error: `API key lacks required scope: ${requiredScope}` };

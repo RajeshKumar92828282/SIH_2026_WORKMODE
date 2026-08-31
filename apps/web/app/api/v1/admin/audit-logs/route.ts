@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     return NextResponse.json({
-      data: logs.map((log) => ({
+      data: logs.map((log: any) => ({
         id: log.id,
         actor: log.actor,
         action: log.action,

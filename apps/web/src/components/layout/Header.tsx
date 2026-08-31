@@ -15,7 +15,8 @@ export function Header() {
   }, []);
 
   const navLinks = [
-    { href: "/", label: "DASHBOARD" },
+    { href: "/", label: "HOME" },
+    { href: "/dashboard", label: "DASHBOARD" },
     { href: "/routes", label: "ROUTES" },
     { href: "/lead-time", label: "LEAD-TIME" },
     { href: "/airlines", label: "AIRLINES" },

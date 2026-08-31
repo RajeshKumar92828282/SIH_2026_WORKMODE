@@ -13,12 +13,9 @@ import {
   Activity,
   Layers,
   ShieldCheck,
-  Zap,
   Radio,
-  Eye,
   Maximize2
 } from "lucide-react";
-import Link from "next/link";
 
 export default function DashboardPage() {
   const { show3DHero, toggle3DHero } = useAppStore();
