@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # APIx — Real-time Airfare Price Index for India
 
 **SIH 2026 Hackathon Project** — Augmenting NSO/MoSPI's CPI transport sub-index using automated airfare data.
@@ -160,3 +161,6 @@ See `AI_INFO/memory.md` for full decision log. Highlights:
 ## License
 
 Internal hackathon project — not for production use without security review.
+=======
+# SIH_2026_WORKMODE
+>>>>>>> e226e59b9d01947e8a296701da071adb56b534d4
