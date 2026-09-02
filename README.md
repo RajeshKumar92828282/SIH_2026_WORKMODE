@@ -87,8 +87,8 @@ npx tsx packages/db/prisma/seed-admin.ts
 cd apps/workers
 python -m venv .venv && source .venv/bin/activate
 pip install -r src/requirements.txt
-python src/scheduler.py --once  # Test single cycle
-# python src/scheduler.py       # Run continuous
+python .\src\run_worker.py # Test single cycle
+     # Run continuous
 ```
 
 ### 4. Start Web App

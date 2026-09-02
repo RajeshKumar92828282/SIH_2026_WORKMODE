@@ -14,44 +14,93 @@ export function LiveTicker() {
   }, []);
 
   const displayRoutes = routes.length > 0 ? routes : [
-    { id: "DEL-BOM", avgLiveFare: 5800, fareChangePct: 12.4 },
-    { id: "DEL-BLR", avgLiveFare: 6650, fareChangePct: 8.2 },
-    { id: "BOM-BLR", avgLiveFare: 4700, fareChangePct: -3.1 }
+    { id: "DEL-BOM", avgLiveFare: 5800,  fareChangePct: 12.4  },
+    { id: "DEL-BLR", avgLiveFare: 6650,  fareChangePct: 8.2   },
+    { id: "BOM-BLR", avgLiveFare: 4700,  fareChangePct: -3.1  },
+    { id: "CCU-BOM", avgLiveFare: 5200,  fareChangePct: 5.7   },
+    { id: "MAA-DEL", avgLiveFare: 7100,  fareChangePct: -1.8  },
+    { id: "HYD-BOM", avgLiveFare: 4300,  fareChangePct: 9.3   },
   ];
 
   return (
-    <div className="w-full h-9 bg-[#002636]/70 backdrop-blur-xl border-b border-[rgba(135,214,235,0.25)] flex items-center overflow-hidden z-40 sticky top-16 font-mono select-none shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
-      <div className="flex-shrink-0 px-4 flex items-center gap-2 bg-[#001b27] z-20 border-r border-[rgba(135,214,235,0.3)] h-full shadow-[4px_0_12px_rgba(0,0,0,0.6)]">
-        <Radio className="w-3.5 h-3.5 text-red-400 animate-pulse" />
-        <span className="text-[11px] font-bold text-[#00daf3] uppercase tracking-wider">TICKER (1-MIN LIVE):</span>
+    <div
+      className="w-full h-9 flex items-center overflow-hidden z-40 sticky select-none font-mono"
+      style={{
+        background:  "#102B3D",
+        borderBottom: "1px solid rgba(0,184,217,0.15)",
+        boxShadow:   "0 2px 8px rgba(0,0,0,0.15)",
+        top: "56px",  /* sits below 14-height header */
+      }}
+    >
+      {/* Left label */}
+      <div
+        className="flex-shrink-0 px-4 flex items-center gap-2 h-full"
+        style={{
+          background:   "#0B1726",
+          borderRight:  "1px solid rgba(0,184,217,0.2)",
+          minWidth:     "fit-content",
+        }}
+      >
+        <Radio className="w-3.5 h-3.5 animate-pulse" style={{ color: "#EF5B5B" }} />
+        <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#00B8D9" }}>
+          LIVE FARES:
+        </span>
       </div>
 
-      <div className="ticker-wrap flex-1 overflow-hidden relative">
+      {/* Scrolling ticker */}
+      <div className="ticker-wrap flex-1 overflow-hidden">
         <div className="ticker-scroll">
-          <div className="inline-flex items-center gap-6 px-4 text-xs font-mono shrink-0">
-            {displayRoutes.map((r) => {
-              const isUp = (r.fareChangePct ?? 0) >= 0;
-              return (
-                <div key={`set1-${r.id}`} className="flex items-center gap-2 shrink-0">
-                  <span className="text-white font-bold">{r.id}</span>
-                  <span className="text-slate-300">₹{(r.avgLiveFare || 5000).toLocaleString()}</span>
-                  <span
-                    className={`flex items-center text-[11px] font-semibold ${
-                      isUp ? "text-emerald-400" : "text-red-400"
-                    }`}
+          {/* Render twice for seamless loop */}
+          {[0, 1].map((set) => (
+            <div key={set} className="inline-flex items-center gap-0 shrink-0">
+              {displayRoutes.map((r) => {
+                const isUp = (r.fareChangePct ?? 0) >= 0;
+                return (
+                  <div
+                    key={`${set}-${r.id}`}
+                    className="flex items-center gap-2 px-5 shrink-0"
+                    style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}
                   >
-                    {isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                    {isUp ? `+${(r.fareChangePct || 0).toFixed(1)}%` : `${(r.fareChangePct || 0).toFixed(1)}%`}
-                  </span>
-                  <span className="text-white/20 font-light">|</span>
-                </div>
-              );
-            })}
-            <div className="flex items-center gap-2 shrink-0 text-amber-400">
-              <span className="font-semibold">NATIONAL APIx: 114.28</span>
-              <span className="text-emerald-400 font-bold">+1.42% (24H)</span>
+                    <span className="text-[12px] font-bold" style={{ color: "#D9E8F2" }}>
+                      {r.id}
+                    </span>
+                    <span className="text-[12px]" style={{ color: "#7B8A9A" }}>
+                      ₹{(r.avgLiveFare || 5000).toLocaleString()}
+                    </span>
+                    <span
+                      className="flex items-center text-[11px] font-semibold"
+                      style={{ color: isUp ? "#16C7A3" : "#EF5B5B" }}
+                    >
+                      {isUp
+                        ? <ArrowUpRight className="w-3 h-3" />
+                        : <ArrowDownRight className="w-3 h-3" />
+                      }
+                      {isUp
+                        ? `+${(r.fareChangePct || 0).toFixed(1)}%`
+                        : `${(r.fareChangePct || 0).toFixed(1)}%`
+                      }
+                    </span>
+                  </div>
+                );
+              })}
+
+              {/* APIX Headline value */}
+              <div
+                className="flex items-center gap-2 px-5 shrink-0"
+                style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                <span className="text-[11px] font-semibold" style={{ color: "#7B8A9A" }}>
+                  NATIONAL APIX:
+                </span>
+                <span className="text-[12px] font-bold" style={{ color: "#F5A623" }}>
+                  114.28
+                </span>
+                <span className="text-[11px] font-bold" style={{ color: "#16C7A3" }}>
+                  +1.42% (24H)
+                </span>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

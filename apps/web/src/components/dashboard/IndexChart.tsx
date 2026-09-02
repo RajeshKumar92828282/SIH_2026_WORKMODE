@@ -15,6 +15,8 @@ import {
 import { Pin } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 
+import { AirplaneActiveDot } from "@/components/charts/AirplaneChartElements";
+
 interface IndexHistoryPoint {
   date: string;
   apixValue: number;
@@ -28,63 +30,129 @@ interface IndexChartProps {
   data: IndexHistoryPoint[];
 }
 
+const DEFAULT_FALLBACK_DATA: IndexHistoryPoint[] = [
+  { date: "08-15", apixValue: 108.4, t1Index: 118.2, t15Index: 102.1, dgcaBenchmark: 107.0 },
+  { date: "08-16", apixValue: 109.1, t1Index: 120.4, t15Index: 102.5, dgcaBenchmark: 107.2 },
+  { date: "08-17", apixValue: 111.8, t1Index: 125.1, t15Index: 103.0, dgcaBenchmark: 107.8 },
+  { date: "08-18", apixValue: 110.2, t1Index: 121.8, t15Index: 102.8, dgcaBenchmark: 108.1 },
+  { date: "08-19", apixValue: 112.5, t1Index: 126.5, t15Index: 103.4, dgcaBenchmark: 108.5 },
+  { date: "08-20", apixValue: 114.28, t1Index: 129.4, t15Index: 104.1, dgcaBenchmark: 109.0 },
+];
+
 export function IndexChart({ data }: IndexChartProps) {
   const { showDgcaBenchmark, toggleDgcaBenchmark } = useAppStore();
   const [activeSeries, setActiveSeries] = useState<"ALL" | "HEADLINE" | "LEAD_TIMES">("ALL");
   const [pinnedPoint, setPinnedPoint] = useState<IndexHistoryPoint | null>(null);
 
-  const fallbackData: IndexHistoryPoint[] = [
-    { date: "08-15", apixValue: 108.4, t1Index: 118.2, t15Index: 102.1, dgcaBenchmark: 107.0 },
-    { date: "08-16", apixValue: 109.1, t1Index: 120.4, t15Index: 102.5, dgcaBenchmark: 107.2 },
-    { date: "08-17", apixValue: 111.8, t1Index: 125.1, t15Index: 103.0, dgcaBenchmark: 107.8 },
-    { date: "08-18", apixValue: 110.2, t1Index: 121.8, t15Index: 102.8, dgcaBenchmark: 108.1 },
-    { date: "08-19", apixValue: 112.5, t1Index: 126.5, t15Index: 103.4, dgcaBenchmark: 108.5 },
-    { date: "08-20", apixValue: 114.28, t1Index: 129.4, t15Index: 104.1, dgcaBenchmark: 109.0 }
-  ];
+  const normalizedData = React.useMemo(() => {
+    const rawList = data && data.length > 0 ? data : DEFAULT_FALLBACK_DATA;
+    
+    // Sort chronologically ascending
+    const sorted = [...rawList].sort((a, b) => {
+      const timeA = new Date(a.timestamp || a.date || 0).getTime();
+      const timeB = new Date(b.timestamp || b.date || 0).getTime();
+      return timeA - timeB;
+    });
 
-  const chartData = data && data.length > 0 ? data : fallbackData;
+    return sorted.map((pt, idx) => {
+      let dateStr = pt.date;
+      if (!dateStr && pt.timestamp) {
+        const d = new Date(pt.timestamp);
+        if (!isNaN(d.getTime())) {
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const hours = String(d.getHours()).padStart(2, '0');
+          dateStr = `${month}-${day} ${hours}:00`;
+        } else {
+          dateStr = String(pt.timestamp).slice(5, 16).replace('T', ' ');
+        }
+      }
+      if (!dateStr) {
+        dateStr = `Pt ${idx + 1}`;
+      }
+
+      const apixVal = Number(pt.apixValue ?? pt.indexValue ?? 114.28);
+      const t1 = Number(pt.t1Index ?? (apixVal * 1.11));
+      const t15 = Number(pt.t15Index ?? (apixVal * 0.91));
+      const dgca = Number(pt.dgcaBenchmark ?? (apixVal * 0.95));
+
+      return {
+        ...pt,
+        date: dateStr,
+        apixValue: Number(apixVal.toFixed(2)),
+        t1Index: Number(t1.toFixed(2)),
+        t15Index: Number(t15.toFixed(2)),
+        dgcaBenchmark: Number(dgca.toFixed(2)),
+      };
+    });
+  }, [data]);
+
+  const chartData = normalizedData;
+
+  // Gradient fill for area
+  const apixGradientId = "apixGradientLight";
 
   return (
-    <div className="glass-panel rounded-2xl p-6 border border-cyan-500/20 shadow-2xl relative transition-all duration-300 hover:border-cyan-400/40">
-      {/* Chart Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
+    <div
+      className="apix-card apix-card-hover p-6 relative"
+      style={{ background: "#FFFFFF" }}
+    >
+      {/* ── Chart Header ──────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h3 className="text-lg font-bold text-white font-display">
-              National Airfare Price Index (APIx) Time Series
+          <div className="flex items-center gap-3 flex-wrap">
+            <h3
+              className="text-[16px] font-semibold leading-tight"
+              style={{ color: "#172B4D" }}
+            >
+              National Airfare Price Index (APIX) — Time Series
             </h3>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-bold">
+            <span
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{
+                background: "rgba(0,184,217,0.10)",
+                color:      "#007A99",
+                border:     "1px solid rgba(0,184,217,0.25)",
+              }}
+            >
               BASE = 100
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1 font-mono">
-            Laspeyres-weighted index vs DGCA published benchmarks • Click any point on the chart to pin telemetry info
+          <p className="text-[12px] mt-1" style={{ color: "#526579" }}>
+            Laspeyres-weighted index vs DGCA benchmarks · Click any point to pin
           </p>
         </div>
 
-        {/* Series Filter & Toggle */}
-        <div className="flex items-center gap-2">
+        {/* Controls */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* DGCA toggle */}
           <button
             onClick={toggleDgcaBenchmark}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-semibold border transition-all hover:scale-105 active:scale-95 ${
+            className="px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+            style={
               showDgcaBenchmark
-                ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
-                : "bg-slate-800/40 text-slate-400 border-slate-700 hover:text-white"
-            }`}
+                ? { background: "rgba(245,166,35,0.12)", color: "#9A6A00", border: "1px solid rgba(245,166,35,0.3)" }
+                : { background: "#F5F8FB",               color: "#526579", border: "1px solid #D9E2EC"              }
+            }
           >
             DGCA Benchmark: {showDgcaBenchmark ? "ON" : "OFF"}
           </button>
 
-          <div className="flex bg-[#071529] p-1 rounded-xl border border-cyan-500/20">
+          {/* Series filter */}
+          <div
+            className="flex p-1 rounded-lg gap-0.5"
+            style={{ background: "#F5F8FB", border: "1px solid #D9E2EC" }}
+          >
             {(["ALL", "HEADLINE", "LEAD_TIMES"] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setActiveSeries(mode)}
-                className={`px-3 py-1 rounded-lg text-[11px] font-bold font-mono transition-all ${
+                className="px-3 py-1 rounded-md text-[11px] font-bold transition-all"
+                style={
                   activeSeries === mode
-                    ? "bg-cyan-500 text-[#021019] shadow-[0_0_10px_rgba(0,229,255,0.4)]"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
-                }`}
+                    ? { background: "#00B8D9", color: "#FFFFFF" }
+                    : { background: "transparent", color: "#526579" }
+                }
               >
                 {mode}
               </button>
@@ -93,38 +161,52 @@ export function IndexChart({ data }: IndexChartProps) {
         </div>
       </div>
 
-      {/* Pinned Info Banner */}
+      {/* ── Pinned Info Banner ─────────────────────────── */}
       {pinnedPoint && (
-        <div className="mb-4 p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-400/40 flex items-center justify-between gap-4 text-xs font-mono animate-fadeIn">
+        <div
+          className="mb-4 p-3.5 rounded-xl flex items-center justify-between gap-4 text-xs animate-fadeIn"
+          style={{
+            background: "rgba(0,184,217,0.06)",
+            border:     "1px solid rgba(0,184,217,0.2)",
+          }}
+        >
           <div className="flex items-center gap-3">
-            <div className="p-1.5 rounded-lg bg-cyan-400/20 text-cyan-400">
-              <Pin className="w-4 h-4" />
+            <div
+              className="p-1.5 rounded-lg"
+              style={{ background: "rgba(0,184,217,0.12)", color: "#00B8D9" }}
+            >
+              <Pin className="w-3.5 h-3.5" />
             </div>
             <div>
-              <span className="font-bold text-white">Pinned Observation: {pinnedPoint.date}</span>
-              <div className="flex gap-4 text-[11px] text-slate-300 mt-0.5">
-                <span>APIx Index: <strong className="text-cyan-400">{pinnedPoint.apixValue} pts</strong></span>
-                <span>T+1 Surge: <strong className="text-red-400">{pinnedPoint.t1Index} pts</strong></span>
-                <span>T+15 Advance: <strong className="text-emerald-400">{pinnedPoint.t15Index} pts</strong></span>
-                {showDgcaBenchmark && <span>DGCA Benchmark: <strong className="text-amber-400">{pinnedPoint.dgcaBenchmark} pts</strong></span>}
+              <span className="font-semibold" style={{ color: "#172B4D" }}>
+                Pinned: {pinnedPoint.date}
+              </span>
+              <div className="flex flex-wrap gap-4 mt-0.5" style={{ color: "#526579" }}>
+                <span>APIX: <strong style={{ color: "#00B8D9" }}>{pinnedPoint.apixValue} pts</strong></span>
+                <span>T+1: <strong style={{ color: "#EF5B5B" }}>{pinnedPoint.t1Index} pts</strong></span>
+                <span>T+15: <strong style={{ color: "#16C7A3" }}>{pinnedPoint.t15Index} pts</strong></span>
+                {showDgcaBenchmark && (
+                  <span>DGCA: <strong style={{ color: "#F5A623" }}>{pinnedPoint.dgcaBenchmark} pts</strong></span>
+                )}
               </div>
             </div>
           </div>
           <button
             onClick={() => setPinnedPoint(null)}
-            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold uppercase transition-colors"
+            className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors"
+            style={{ background: "#F5F8FB", border: "1px solid #D9E2EC", color: "#526579" }}
           >
-            Clear Pin
+            Clear
           </button>
         </div>
       )}
 
-      {/* Recharts Area Container */}
-      <div className="h-[340px] w-full">
+      {/* ── Chart ─────────────────────────────────────── */}
+      <div className="h-[320px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart 
-            data={chartData} 
-            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+          <AreaChart
+            data={chartData}
+            margin={{ top: 8, right: 8, left: -20, bottom: 0 }}
             onClick={(e) => {
               if (e && e.activePayload && e.activePayload.length) {
                 setPinnedPoint(e.activePayload[0].payload as IndexHistoryPoint);
@@ -132,47 +214,78 @@ export function IndexChart({ data }: IndexChartProps) {
             }}
           >
             <defs>
-              <linearGradient id="apixGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#00e5ff" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="#00e5ff" stopOpacity={0.0} />
+              <linearGradient id={apixGradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%"  stopColor="#00B8D9" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#00B8D9" stopOpacity={0.0} />
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#143159" opacity={0.5} vertical={false} />
-            <XAxis 
-              dataKey="date" 
-              stroke="#64748b" 
-              tick={{ fontSize: 11, fontFamily: "monospace" }}
+            <CartesianGrid strokeDasharray="3 3" stroke="#E4EAF0" vertical={false} />
+            <XAxis
+              dataKey="date"
+              stroke="#D9E2EC"
+              tick={{ fontSize: 11, fill: "#526579", fontFamily: "Inter, sans-serif" }}
               tickLine={false}
+              axisLine={{ stroke: "#D9E2EC" }}
             />
-            <YAxis 
-              domain={['dataMin - 5', 'dataMax + 5']} 
-              stroke="#64748b" 
-              tick={{ fontSize: 11, fontFamily: "monospace" }}
+            <YAxis
+              domain={["dataMin - 5", "dataMax + 5"]}
+              stroke="#D9E2EC"
+              tick={{ fontSize: 11, fill: "#526579", fontFamily: "Inter, sans-serif" }}
               tickLine={false}
+              axisLine={false}
             />
-            
+
             <Tooltip
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="bg-[#071529]/95 backdrop-blur-xl p-4 rounded-2xl border border-cyan-500/40 shadow-[0_8px_32px_rgba(0,229,255,0.3)] text-xs font-mono w-60">
-                      <div className="font-bold text-white mb-2 pb-1.5 border-b border-cyan-500/20 flex justify-between items-center">
+                    <div
+                      style={{
+                        background:   "#FFFFFF",
+                        border:       "1px solid #D9E2EC",
+                        borderRadius: "10px",
+                        boxShadow:    "0 8px 32px rgba(23,43,77,0.12)",
+                        padding:      "12px 16px",
+                        minWidth:     "200px",
+                        fontFamily:   "Inter, sans-serif",
+                        fontSize:     "12px",
+                      }}
+                    >
+                      <div
+                        className="font-semibold mb-2 pb-2 flex justify-between"
+                        style={{ color: "#172B4D", borderBottom: "1px solid #EAF0F5" }}
+                      >
                         <span>Date: {label}</span>
-                        <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-1.5 py-0.5 rounded font-bold">CLICK TO PIN</span>
+                        <span
+                          style={{
+                            fontSize:   "10px",
+                            background: "rgba(0,184,217,0.10)",
+                            color:      "#007A99",
+                            padding:    "2px 8px",
+                            borderRadius: "99px",
+                          }}
+                        >
+                          CLICK TO PIN
+                        </span>
                       </div>
                       {payload.map((p, idx) => (
-                        <div key={idx} className="flex items-center justify-between gap-4 py-1">
-                          <span className="flex items-center gap-1.5 text-slate-300" style={{ color: p.color }}>
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+                        <div key={idx} className="flex items-center justify-between gap-6 py-0.5">
+                          <span className="flex items-center gap-1.5" style={{ color: "#526579" }}>
+                            <span className="w-2 h-2 rounded-full" style={{ background: p.color as string }} />
                             {p.name}:
                           </span>
-                          <span className="font-bold text-white">{Number(p.value).toFixed(2)} pts</span>
+                          <span className="font-bold" style={{ color: "#172B4D" }}>
+                            {Number(p.value).toFixed(2)} pts
+                          </span>
                         </div>
                       ))}
-                      <div className="mt-2 pt-1.5 border-t border-cyan-500/20 text-[10px] text-slate-400 flex justify-between">
+                      <div
+                        className="mt-2 pt-1.5 flex justify-between text-[10px]"
+                        style={{ borderTop: "1px solid #EAF0F5", color: "#7B8A9A" }}
+                      >
                         <span>Calibration:</span>
-                        <span className="text-emerald-400 font-bold">IQR k=1.5 Filtered</span>
+                        <span style={{ color: "#16C7A3", fontWeight: 600 }}>IQR k=1.5 Filtered</span>
                       </div>
                     </div>
                   );
@@ -181,18 +294,23 @@ export function IndexChart({ data }: IndexChartProps) {
               }}
             />
 
-            <ReferenceLine y={100} stroke="#64748b" strokeDasharray="4 4" label={{ value: "BASE 100", fill: "#64748b", fontSize: 10, position: "insideBottomLeft" }} />
+            <ReferenceLine
+              y={100}
+              stroke="#D9E2EC"
+              strokeDasharray="4 4"
+              label={{ value: "BASE 100", fill: "#7B8A9A", fontSize: 10, position: "insideBottomLeft" }}
+            />
 
             {(activeSeries === "ALL" || activeSeries === "HEADLINE") && (
               <Area
                 type="monotone"
                 dataKey="apixValue"
-                name="APIx Headline"
-                stroke="#00e5ff"
-                strokeWidth={3}
+                name="APIX Headline"
+                stroke="#00B8D9"
+                strokeWidth={2.5}
                 fillOpacity={1}
-                fill="url(#apixGradient)"
-                activeDot={{ r: 7, fill: "#ffffff", stroke: "#00e5ff", strokeWidth: 3 }}
+                fill={`url(#${apixGradientId})`}
+                activeDot={<AirplaneActiveDot stroke="#00B8D9" />}
               />
             )}
 
@@ -200,11 +318,12 @@ export function IndexChart({ data }: IndexChartProps) {
               <Line
                 type="monotone"
                 dataKey="t1Index"
-                name="T+1 (Last Minute)"
-                stroke="#ff5252"
-                strokeWidth={2}
+                name="T+1 Last Minute"
+                stroke="#EF5B5B"
+                strokeWidth={1.8}
                 dot={false}
-                strokeDasharray="3 3"
+                strokeDasharray="4 3"
+                activeDot={<AirplaneActiveDot stroke="#EF5B5B" />}
               />
             )}
 
@@ -212,10 +331,11 @@ export function IndexChart({ data }: IndexChartProps) {
               <Line
                 type="monotone"
                 dataKey="t15Index"
-                name="T+15 (Advance)"
-                stroke="#00c853"
-                strokeWidth={2}
+                name="T+15 Advance"
+                stroke="#16C7A3"
+                strokeWidth={1.8}
                 dot={false}
+                activeDot={<AirplaneActiveDot stroke="#16C7A3" />}
               />
             )}
 
@@ -224,34 +344,36 @@ export function IndexChart({ data }: IndexChartProps) {
                 type="monotone"
                 dataKey="dgcaBenchmark"
                 name="DGCA Benchmark"
-                stroke="#ffd600"
-                strokeWidth={2.2}
-                dot={{ r: 3.5, fill: "#ffd600" }}
+                stroke="#F5A623"
+                strokeWidth={2}
+                dot={{ r: 3, fill: "#F5A623", stroke: "#FFFFFF", strokeWidth: 1.5 }}
               />
             )}
           </AreaChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Bottom Summary Legend */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-3 border-t border-cyan-500/20 text-xs font-mono">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5 text-cyan-400 font-bold hover:scale-105 transition-transform cursor-pointer">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00e5ff]"></span>
-            <span>APIx Weighted Index</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-red-400 font-bold hover:scale-105 transition-transform cursor-pointer">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-400 shadow-[0_0_8px_#ff5252]"></span>
-            <span>T+1 Last-Minute Window</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-emerald-400 font-bold hover:scale-105 transition-transform cursor-pointer">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#00c853]"></span>
-            <span>T+15 Advance Booking</span>
-          </div>
+      {/* ── Legend ────────────────────────────────────── */}
+      <div
+        className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-3 text-[12px]"
+        style={{ borderTop: "1px solid #EAF0F5" }}
+      >
+        <div className="flex flex-wrap items-center gap-5">
+          {[
+            { label: "APIX Weighted Index",    color: "#00B8D9" },
+            { label: "T+1 Last-Minute",        color: "#EF5B5B" },
+            { label: "T+15 Advance Booking",   color: "#16C7A3" },
+            ...(showDgcaBenchmark ? [{ label: "DGCA Benchmark", color: "#F5A623" }] : []),
+          ].map((s) => (
+            <div key={s.label} className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
+              <span style={{ color: "#526579", fontWeight: 500 }}>{s.label}</span>
+            </div>
+          ))}
         </div>
-        <div className="text-slate-400">
-          Source: <span className="text-cyan-300 font-semibold">APIx Two-Pass Laspeyres Aggregator</span>
-        </div>
+        <span style={{ color: "#7B8A9A" }}>
+          Source: <span style={{ color: "#00B8D9", fontWeight: 600 }}>APIX Two-Pass Laspeyres</span>
+        </span>
       </div>
     </div>
   );

@@ -35,18 +35,19 @@ export default function AlertsPage() {
 
   return (
     <main className="p-6 md:p-8 space-y-6 max-w-[1600px] w-full mx-auto font-sans">
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <Bell className="w-7 h-7 text-rose-400" />
-            <h1 className="text-2xl font-extrabold text-white font-display tracking-tight">
+            <Bell className="w-7 h-7 text-[#EF5B5B]" />
+            <h1 className="text-2xl font-extrabold text-[#172B4D] font-display tracking-tight">
               Systemic Fare Volatility & Anomaly Alerts
             </h1>
-            <span className="text-xs font-mono px-2.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">
+            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-bold">
               SPIKE MONITOR
             </span>
           </div>
-          <p className="text-xs text-slate-400 font-mono mt-1">
+          <p className="text-xs text-[#486581] font-mono mt-1">
             Automated real-time anomaly detection triggers flagging intraday fare surges exceeding +25%.
           </p>
         </div>
@@ -54,30 +55,30 @@ export default function AlertsPage() {
         {/* Action: Simulate Anomaly Button */}
         <button
           onClick={triggerSimulatedAlert}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-mono font-bold transition-all shadow-lg"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-mono font-bold transition-all shadow-sm"
         >
-          <Zap className="w-4 h-4 text-rose-400" />
+          <Zap className="w-4 h-4 text-rose-600" />
           <span>{simulated ? "SPIKE TRIGGERED!" : "SIMULATE SURGE ANOMALY"}</span>
         </button>
       </div>
 
-      <div className="glass-panel p-6 rounded-2xl border border-[#143159] space-y-4">
+      <div className="apix-card p-6 space-y-4" style={{ background: "#FFFFFF" }}>
         {alerts.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 flex flex-col items-center justify-center space-y-3 font-mono">
-            <CheckCircle2 className="w-10 h-10 text-emerald-400" />
-            <p className="font-semibold text-white text-base">No active systemic fare spikes or data quality anomalies</p>
-            <p className="text-xs">Market mutator tick feed calibrated cleanly within baseline limits.</p>
+          <div className="py-12 text-center text-[#486581] flex flex-col items-center justify-center space-y-3 font-mono">
+            <CheckCircle2 className="w-10 h-10 text-[#0D8A73]" />
+            <p className="font-bold text-[#172B4D] text-base">No active systemic fare spikes or data quality anomalies</p>
+            <p className="text-xs text-[#627D98]">Market mutator tick feed calibrated cleanly within baseline limits.</p>
           </div>
         ) : (
           alerts.map((a) => (
-            <div key={a.id} className="bg-red-950/40 p-4.5 rounded-xl border border-red-800/60 flex items-start space-x-3.5 font-mono shadow-md">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5 animate-pulse" />
+            <div key={a.id} className="bg-rose-50/70 p-4.5 rounded-xl border border-rose-200 flex items-start space-x-3.5 font-mono shadow-sm">
+              <AlertCircle className="w-5 h-5 text-[#C0392B] flex-shrink-0 mt-0.5 animate-pulse" />
               <div className="flex-1">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-red-400 uppercase tracking-wider">{a.type}</span>
-                  <span className="text-[11px] text-slate-400">{new Date(a.createdAt).toLocaleTimeString('en-IN')}</span>
+                  <span className="text-xs font-bold text-[#C0392B] uppercase tracking-wider">{a.type}</span>
+                  <span className="text-[11px] text-[#627D98]">{new Date(a.createdAt).toLocaleTimeString('en-IN')}</span>
                 </div>
-                <p className="text-sm font-medium text-white mt-1.5 font-sans leading-relaxed">{a.message}</p>
+                <p className="text-sm font-semibold text-[#172B4D] mt-1.5 font-sans leading-relaxed">{a.message}</p>
               </div>
             </div>
           ))

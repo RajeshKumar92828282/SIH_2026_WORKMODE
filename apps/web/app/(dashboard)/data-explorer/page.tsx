@@ -69,18 +69,19 @@ export default function DataExplorerPage() {
 
   return (
     <main className="p-6 md:p-8 space-y-6 max-w-[1600px] w-full mx-auto font-sans">
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <Database className="w-7 h-7 text-cyan-400" />
-            <h1 className="text-2xl font-extrabold text-white font-display tracking-tight">
+            <Database className="w-7 h-7 text-[#00B8D9]" />
+            <h1 className="text-2xl font-extrabold text-[#172B4D] font-display tracking-tight">
               Raw Observation Data Explorer
             </h1>
-            <span className="text-xs font-mono px-2.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+            <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-[#00B8D9]/10 text-[#007A99] border border-[#00B8D9]/30 font-bold">
               AUDIT-READY
             </span>
           </div>
-          <p className="text-xs text-slate-400 font-mono mt-1">
+          <p className="text-xs text-[#486581] font-mono mt-1">
             Filterable inspection table across all 1-minute market tick calculation batches.
           </p>
         </div>
@@ -89,14 +90,14 @@ export default function DataExplorerPage() {
         <div className="flex items-center gap-2 font-mono">
           <button
             onClick={exportCSV}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#00B8D9]/10 hover:bg-[#00B8D9]/20 text-[#007A99] border border-[#00B8D9]/30 text-xs font-bold transition-all shadow-sm"
           >
             <Download className="w-3.5 h-3.5" />
             <span>EXPORT CSV</span>
           </button>
           <button
             onClick={exportJSON}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-bold transition-all"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold transition-all shadow-sm"
           >
             <Download className="w-3.5 h-3.5" />
             <span>EXPORT JSON</span>
@@ -105,16 +106,16 @@ export default function DataExplorerPage() {
       </div>
 
       {/* Filter Bar */}
-      <div className="glass-panel p-4 rounded-xl border border-[#143159] flex flex-wrap items-center gap-4 text-xs font-mono">
-        <div className="flex items-center gap-2 text-slate-400">
-          <Filter className="w-4 h-4 text-cyan-400" />
+      <div className="apix-card p-4 flex flex-wrap items-center gap-4 text-xs font-mono shadow-sm" style={{ background: "#FFFFFF" }}>
+        <div className="flex items-center gap-2 text-[#486581] font-bold">
+          <Filter className="w-4 h-4 text-[#00B8D9]" />
           <span>FILTER OBSERVATIONS:</span>
         </div>
 
         <select
           value={routeFilter}
           onChange={(e) => setRouteFilter(e.target.value)}
-          className="bg-[#071529] border border-[#143159] rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-400"
+          className="bg-[#F5F8FB] border border-[#D9E2EC] rounded-xl px-3 py-2 text-[#172B4D] font-semibold focus:outline-none focus:border-[#00B8D9]"
         >
           <option value="">All Route Corridors</option>
           <option value="DEL-BOM">DEL-BOM (Delhi ➔ Mumbai)</option>
@@ -125,7 +126,7 @@ export default function DataExplorerPage() {
         <select
           value={carrierFilter}
           onChange={(e) => setCarrierFilter(e.target.value)}
-          className="bg-[#071529] border border-[#143159] rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-400"
+          className="bg-[#F5F8FB] border border-[#D9E2EC] rounded-xl px-3 py-2 text-[#172B4D] font-semibold focus:outline-none focus:border-[#00B8D9]"
         >
           <option value="">All Carriers</option>
           <option value="IGO">IndiGo (IGO)</option>
@@ -138,7 +139,7 @@ export default function DataExplorerPage() {
         <select
           value={leadTimeFilter}
           onChange={(e) => setLeadTimeFilter(e.target.value)}
-          className="bg-[#071529] border border-[#143159] rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-400"
+          className="bg-[#F5F8FB] border border-[#D9E2EC] rounded-xl px-3 py-2 text-[#172B4D] font-semibold focus:outline-none focus:border-[#00B8D9]"
         >
           <option value="">All Lead Times</option>
           <option value="T+1">T+1 (1 Day Emergency)</option>
@@ -147,10 +148,10 @@ export default function DataExplorerPage() {
       </div>
 
       {/* Observation Data Table */}
-      <div className="glass-panel rounded-2xl p-6 border border-[#143159]">
+      <div className="apix-card p-6 shadow-sm" style={{ background: "#FFFFFF" }}>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
-            <thead className="bg-[#071529]/80 text-slate-400 uppercase font-semibold border-b border-[#143159]">
+            <thead className="bg-[#EAF0F5] text-[#486581] uppercase font-semibold border-b border-[#D9E2EC]">
               <tr>
                 <th className="py-3 px-4">Timestamp</th>
                 <th className="py-3 px-4">Route</th>
@@ -162,19 +163,19 @@ export default function DataExplorerPage() {
                 <th className="py-3 px-4">Contribution</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#143159]/60 text-slate-300">
+            <tbody className="divide-y divide-[#EAF0F5] text-[#172B4D]">
               {observations.map((o) => (
-                <tr key={o.id} className="hover:bg-[#0e264a]/50 transition-colors">
-                  <td className="py-3 px-4 text-slate-400">
+                <tr key={o.id} className="hover:bg-[#F2FAFC] transition-colors">
+                  <td className="py-3 px-4 text-[#627D98]">
                     {new Date(o.computedAt).toLocaleTimeString('en-IN')}
                   </td>
-                  <td className="py-3 px-4 font-bold text-cyan-400">{o.routeId}</td>
-                  <td className="py-3 px-4 text-purple-300">{o.carrierId}</td>
-                  <td className="py-3 px-4 text-amber-300">{o.leadTimeWindow}</td>
-                  <td className="py-3 px-4 text-slate-400">₹{o.staticTotalFare}</td>
-                  <td className="py-3 px-4 font-semibold text-white">₹{o.liveTotalFare}</td>
-                  <td className="py-3 px-4 text-emerald-400">{o.relativePrice}</td>
-                  <td className="py-3 px-4 font-bold text-indigo-300">{o.indexContribution}</td>
+                  <td className="py-3 px-4 font-bold text-[#007A99]">{o.routeId}</td>
+                  <td className="py-3 px-4 text-purple-700 font-semibold">{o.carrierId}</td>
+                  <td className="py-3 px-4 text-[#9A6A00] font-semibold">{o.leadTimeWindow}</td>
+                  <td className="py-3 px-4 text-[#627D98]">₹{o.staticTotalFare}</td>
+                  <td className="py-3 px-4 font-bold text-[#172B4D]">₹{o.liveTotalFare}</td>
+                  <td className="py-3 px-4 text-[#0D8A73] font-bold">{o.relativePrice}</td>
+                  <td className="py-3 px-4 font-bold text-indigo-700">{o.indexContribution}</td>
                 </tr>
               ))}
             </tbody>
@@ -182,20 +183,20 @@ export default function DataExplorerPage() {
         </div>
 
         {/* Pagination Bar */}
-        <div className="mt-4 flex items-center justify-between pt-4 border-t border-[#143159] text-xs font-mono text-slate-400">
+        <div className="mt-4 flex items-center justify-between pt-4 border-t border-[#EAF0F5] text-xs font-mono text-[#486581]">
           <span>Page {meta.page || 1} of {Math.max(1, Math.ceil((meta.total || 1) / (meta.limit || 20)))} ({meta.total || observations.length} Total Records)</span>
           <div className="flex space-x-2">
             <button
               disabled={page <= 1}
               onClick={() => setPage(page - 1)}
-              className="p-1.5 rounded-lg bg-[#071529] disabled:opacity-40 hover:bg-[#143159] text-white transition-colors"
+              className="p-1.5 rounded-lg bg-[#F5F8FB] border border-[#D9E2EC] disabled:opacity-40 hover:bg-[#EAF0F5] text-[#172B4D] transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               disabled={page >= Math.ceil((meta.total || 1) / (meta.limit || 20))}
               onClick={() => setPage(page + 1)}
-              className="p-1.5 rounded-lg bg-[#071529] disabled:opacity-40 hover:bg-[#143159] text-white transition-colors"
+              className="p-1.5 rounded-lg bg-[#F5F8FB] border border-[#D9E2EC] disabled:opacity-40 hover:bg-[#EAF0F5] text-[#172B4D] transition-colors"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

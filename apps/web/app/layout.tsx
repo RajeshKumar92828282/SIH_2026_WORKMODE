@@ -5,29 +5,29 @@ import { MainLayoutContainer } from '@/components/layout/MainLayoutContainer';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'APIx — National Airfare Price Index & 3D Flight Telemetry Platform',
-  description: 'High-frequency CPI-style airfare price index engine and WebGL 3D aeronautical flight telemetry platform for Reserve Bank of India and NSO analysts.',
-  keywords: ['APIx', 'Airfare Index', 'Flight Telemetry', 'CPI Airfare', 'India Flight CPI', 'DGCA Weighted Index', '3D Aeronautical Telemetry'],
-  authors: [{ name: 'APIx Engineering Team' }],
-  themeColor: '#001826',
+  title: 'APIX — Find Cheapest Flights Across India | Live Price Tracker',
+  description: 'APIX tracks live flight prices across IndiGo, Air India, Vistara, Akasa & SpiceJet. Updated every 15 seconds. Find the cheapest airfares, set price alerts, and save money — completely free!',
+  keywords: ['cheap flights India', 'flight price tracker', 'India airfare', 'cheapest flights', 'IndiGo prices', 'Air India fares', 'flight deals India', 'book cheap flights', 'price alert flights'],
+  authors: [{ name: 'India Flight Price Tracker — SIH 2026' }],
+  themeColor: '#2563eb',
   openGraph: {
-    title: 'APIx — National Airfare Price Index & 3D Telemetry',
-    description: 'High-frequency CPI-style airfare price index engine and WebGL 3D aeronautical flight telemetry platform.',
+    title: 'India Flight Price Tracker — Find Cheapest Airfares',
+    description: 'Track live flight prices across all major Indian airlines. Save money by booking at the right time. Free for everyone!',
     type: 'website',
     locale: 'en_IN',
-    siteName: 'APIx National Airfare Index'
+    siteName: 'India Flight Price Tracker'
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'APIx — National Airfare Price Index',
-    description: 'High-frequency CPI-style airfare price index engine and WebGL 3D aeronautical telemetry platform.'
+    title: 'India Flight Price Tracker — Find Cheapest Airfares',
+    description: 'Check live flight prices updated every 15 seconds across IndiGo, Air India, Vistara, Akasa & SpiceJet. Free!'
   }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className="min-h-screen bg-[#001826] text-white antialiased selection:bg-[#87D6EB] selection:text-[#003247]" suppressHydrationWarning>
+      <body className="min-h-screen bg-[#f0f7ff] text-[#1a2340] antialiased selection:bg-[#bfdbfe] selection:text-[#1e3a5f]" suppressHydrationWarning>
         <CustomCursor />
         <AuthGuard>
           <MainLayoutContainer>

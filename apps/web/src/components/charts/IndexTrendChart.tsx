@@ -10,6 +10,7 @@ import {
   CartesianGrid,
   Legend
 } from 'recharts';
+import { AirplaneActiveDot } from './AirplaneChartElements';
 
 interface HistoryPoint {
   timestamp: string;
@@ -54,7 +55,7 @@ export function IndexTrendChart({ data }: IndexTrendChartProps) {
             stroke="#10b981"
             strokeWidth={3}
             dot={{ r: 3, fill: '#10b981' }}
-            activeDot={{ r: 6 }}
+            activeDot={<AirplaneActiveDot stroke="#10b981" />}
           />
           <Line
             type="monotone"

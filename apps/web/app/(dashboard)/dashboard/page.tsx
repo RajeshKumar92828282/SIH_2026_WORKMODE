@@ -50,7 +50,10 @@ export default function DashboardPage() {
   const pctChange = summary?.pctChange24h || 1.42;
 
   return (
-    <main className="p-6 md:p-8 space-y-6 max-w-[1600px] w-full mx-auto font-sans">
+    <main
+      className="p-6 md:p-8 space-y-6 max-w-[1600px] w-full mx-auto"
+      style={{ background: "#F5F8FB", fontFamily: "'Inter', system-ui, sans-serif", minHeight: "calc(100vh - 92px)" }}
+    >
       {/* 3D Aeronautical Telemetry Hero Section */}
       {show3DHero && (
         <div className="w-full h-[400px] md:h-[460px] transition-all duration-500 animate-fadeIn">
@@ -60,17 +63,21 @@ export default function DashboardPage() {
 
       {/* Hero Control Bar if Hidden */}
       {!show3DHero && (
-        <div className="flex items-center justify-between p-4 rounded-xl glass-panel border border-[rgba(135,214,235,0.25)] font-mono text-xs">
+        <div
+          className="flex items-center justify-between px-5 py-3.5 rounded-xl"
+          style={{ background: "#FFFFFF", border: "1px solid #D9E2EC", boxShadow: "0 1px 4px rgba(23,43,77,0.06)" }}
+        >
           <div className="flex items-center gap-3">
-            <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
-            <span className="text-white font-bold">AIRCRAFT 3D TELEMETRY STREAM MINIMIZED</span>
+            <Radio className="w-4 h-4 animate-pulse" style={{ color: "#00B8D9" }} />
+            <span className="text-[13px] font-semibold" style={{ color: "#172B4D" }}>Aircraft 3D Telemetry Stream — Minimized</span>
           </div>
           <button
             onClick={toggle3DHero}
-            className="flex items-center gap-2 px-3 py-1.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 transition-colors font-bold"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors"
+            style={{ background: "rgba(0,184,217,0.08)", color: "#007A99", border: "1px solid rgba(0,184,217,0.2)" }}
           >
             <Maximize2 className="w-3.5 h-3.5" />
-            <span>EXPAND 3D CFD CANVAS</span>
+            <span>Expand 3D Canvas</span>
           </button>
         </div>
       )}

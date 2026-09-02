@@ -10,18 +10,16 @@ export function Header() {
   const { session, isAuthenticated, logout } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   const navLinks = [
-    { href: "/", label: "HOME" },
-    { href: "/dashboard", label: "DASHBOARD" },
-    { href: "/routes", label: "ROUTES" },
-    { href: "/lead-time", label: "LEAD-TIME" },
-    { href: "/airlines", label: "AIRLINES" },
-    { href: "/heatmap", label: "HEATMAP" },
-    { href: "/methodology", label: "METHODOLOGY" },
+    { href: "/",             label: "Home"        },
+    { href: "/dashboard",    label: "Dashboard"   },
+    { href: "/routes",       label: "Routes"      },
+    { href: "/lead-time",    label: "Lead-Time"   },
+    { href: "/airlines",     label: "Airlines"    },
+    { href: "/heatmap",      label: "Heatmap"     },
+    { href: "/methodology",  label: "Methodology" },
   ];
 
   const handleLogout = () => {
@@ -29,12 +27,21 @@ export function Header() {
     window.location.href = "/login";
   };
 
+  const headerStyle: React.CSSProperties = {
+    background: "#FFFFFF",
+    borderBottom: "1px solid #D9E2EC",
+    boxShadow: "0 1px 4px rgba(23,43,77,0.06)",
+  };
+
   if (!mounted) {
     return (
-      <header className="w-full h-16 bg-[#002636]/45 backdrop-blur-2xl border-b border-[rgba(135,214,235,0.18)] shadow-[0_4px_30px_rgba(0,0,0,0.35)] flex items-center justify-between px-6 md:px-10 z-50 sticky top-0 font-mono">
-        <a href="/" className="flex items-center gap-3 group no-underline">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#87D6EB] animate-pulse"></div>
-          <span className="text-xs uppercase tracking-widest font-semibold text-white group-hover:text-[#87D6EB] transition-colors">
+      <header
+        className="w-full h-14 flex items-center justify-between px-6 md:px-8 z-50 sticky top-0"
+        style={headerStyle}
+      >
+        <a href="/" className="flex items-center gap-2 no-underline">
+          <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#00B8D9" }} />
+          <span className="text-xs font-bold tracking-widest uppercase" style={{ color: "#172B4D" }}>
             APIX SYSTEM
           </span>
         </a>
@@ -43,76 +50,128 @@ export function Header() {
   }
 
   return (
-    <header className="w-full h-16 bg-[#002636]/45 backdrop-blur-2xl border-b border-[rgba(135,214,235,0.18)] shadow-[0_4px_30px_rgba(0,0,0,0.35)] flex items-center justify-between px-6 md:px-10 z-50 sticky top-0 font-mono">
-      {/* Left: Brand */}
-      <a href="/" className="flex items-center gap-3 group no-underline">
-        <div className="w-2.5 h-2.5 rounded-full bg-[#87D6EB] animate-pulse"></div>
-        <span className="text-xs uppercase tracking-widest font-semibold text-white group-hover:text-[#87D6EB] transition-colors">
+    <header
+      className="w-full h-14 flex items-center justify-between px-6 md:px-8 z-50 sticky top-0"
+      style={headerStyle}
+    >
+      {/* ── Brand ─────────────────────────────────────────── */}
+      <a href="/" className="flex items-center gap-2 no-underline group">
+        <span
+          className="w-2 h-2 rounded-full animate-pulse"
+          style={{ background: "#00B8D9" }}
+        />
+        <span
+          className="text-xs font-bold tracking-widest uppercase transition-colors group-hover:opacity-80"
+          style={{ color: "#172B4D" }}
+        >
           APIX SYSTEM
         </span>
       </a>
 
-      {/* Center: Nav Links */}
-      <nav className="hidden lg:flex items-center gap-8 text-xs font-mono">
-        {navLinks.map((item) => (
-          <a
-            key={item.href}
-            href={item.href}
-            className={`nav-link tracking-wider uppercase transition-colors relative py-1 group/nav ${
-              pathname === item.href ? "text-[#87D6EB] font-bold" : "text-white/90 hover:text-[#87D6EB]"
-            }`}
-          >
-            {item.label}
-            <span
-              className={`absolute bottom-0 left-0 w-full h-[2px] bg-[#87D6EB] shadow-[0_0_10px_#87D6EB] transition-transform duration-300 origin-center ${
-                pathname === item.href ? "scale-x-100" : "scale-x-0 group-hover/nav:scale-x-100"
-              }`}
-            />
-          </a>
-        ))}
+      {/* ── Centre Nav ────────────────────────────────────── */}
+      <nav className="hidden lg:flex items-center gap-6">
+        {navLinks.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <a
+              key={item.href}
+              href={item.href}
+              className="relative text-[13px] font-medium transition-colors pb-0.5"
+              style={{
+                color:       isActive ? "#00B8D9" : "#526579",
+                fontWeight:  isActive ? 600 : 500,
+              }}
+              onMouseEnter={e => {
+                if (!isActive) (e.currentTarget as HTMLAnchorElement).style.color = "#172B4D";
+              }}
+              onMouseLeave={e => {
+                if (!isActive) (e.currentTarget as HTMLAnchorElement).style.color = "#526579";
+              }}
+            >
+              {item.label}
+              {/* Active underline */}
+              <span
+                className="absolute bottom-0 left-0 w-full transition-transform duration-200"
+                style={{
+                  height:           "2px",
+                  background:       "#00B8D9",
+                  borderRadius:     "2px",
+                  transform:        isActive ? "scaleX(1)" : "scaleX(0)",
+                  transformOrigin:  "left",
+                }}
+              />
+            </a>
+          );
+        })}
       </nav>
 
-      {/* Right: Actions */}
+      {/* ── Right Actions ─────────────────────────────────── */}
       <div className="flex items-center gap-3">
+        {/* Alerts */}
         <a
           href="/alerts"
-          className="relative w-10 h-10 rounded-full border border-[rgba(135,214,235,0.35)] hover:border-[#87D6EB] text-white hover:text-[#87D6EB] bg-[#002636]/40 hover:bg-[#87D6EB]/10 transition-all flex items-center justify-center group cursor-pointer"
-          title="Volatility & Anomaly Alerts"
+          title="Alerts"
+          className="relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
+          style={{ color: "#526579", border: "1px solid #D9E2EC" }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLAnchorElement).style.background = "#F5F8FB";
+            (e.currentTarget as HTMLAnchorElement).style.color = "#172B4D";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+            (e.currentTarget as HTMLAnchorElement).style.color = "#526579";
+          }}
         >
-          <Bell className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-[9px] font-bold font-mono text-white rounded-full border-2 border-[#002636] shadow-[0_0_8px_rgba(255,82,82,0.8)] flex items-center justify-center animate-pulse">
+          <Bell className="w-4 h-4" style={{ color: "#F5A623" }} />
+          <span
+            className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
+            style={{ background: "#EF5B5B", border: "2px solid #FFFFFF" }}
+          >
             2
           </span>
         </a>
 
-        <div className="flex items-center gap-3">
-          {isAuthenticated ? (
-            <>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded bg-[#002636]/40 border border-[rgba(135,214,235,0.2)] text-xs font-mono text-white/80">
-                <User className="w-3.5 h-3.5 text-[#87D6EB]" />
-                <span className="text-white/90 font-mono text-[11px]">
-                  {session?.email?.split("@")[0] || "USER"}
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1.5" />
-              </div>
-              <button
-                onClick={handleLogout}
-                className="border border-[rgba(135,214,235,0.4)] hover:border-[#87D6EB] px-3 py-1.5 flex items-center gap-2 group hover:bg-[#87D6EB] hover:text-[#003247] transition-all text-xs font-mono tracking-wider font-semibold text-white no-underline rounded"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>LOGOUT</span>
-              </button>
-            </>
-          ) : (
-            <a
-              href="/login"
-              className="border border-[rgba(135,214,235,0.4)] hover:border-[#87D6EB] px-4 py-2 flex items-center gap-3 group hover:bg-[#87D6EB] hover:text-[#003247] transition-all text-xs font-mono tracking-wider font-semibold text-white no-underline rounded"
+        {/* User / Auth */}
+        {isAuthenticated ? (
+          <div className="flex items-center gap-2">
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-medium"
+              style={{ background: "#F5F8FB", border: "1px solid #D9E2EC", color: "#526579" }}
             >
-              <span>INSTITUTIONAL ACCESS</span>
-              <div className="w-2.5 h-2.5 bg-[#87D6EB] group-hover:bg-[#003247] transition-colors"></div>
-            </a>
-          )}
-        </div>
+              <User className="w-3.5 h-3.5" style={{ color: "#00B8D9" }} />
+              <span style={{ color: "#172B4D" }}>
+                {session?.email?.split("@")[0] || "USER"}
+              </span>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#16C7A3" }} />
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-colors"
+              style={{ background: "#F5F8FB", border: "1px solid #D9E2EC", color: "#526579" }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.color = "#EF5B5B";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "#EF5B5B";
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.color = "#526579";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "#D9E2EC";
+              }}
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Logout</span>
+            </button>
+          </div>
+        ) : (
+          <a
+            href="/login"
+            className="px-4 py-1.5 rounded-lg text-[12px] font-semibold transition-colors no-underline"
+            style={{ background: "#00B8D9", color: "#FFFFFF" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "#0099B5"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "#00B8D9"; }}
+          >
+            Institutional Access
+          </a>
+        )}
       </div>
     </header>
   );
